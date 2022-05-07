@@ -45,15 +45,15 @@ def get_layout_size(elements):
     if elements <= 1:
         return 1, 1
     elif elements == 2:
-        return 2, 1
+        return 1, 2
     elif elements == 3:
-        return 3, 1
+        return 1, 3
     elif elements == 4:
-        return 2, 2
+        return 1, 4
     elif elements == 5:
-        return 3, 2
+        return 1, 5
     elif elements == 6:
-        return 3, 2
+        return 1, 6
     elif elements == 7:
         return 3, 3
     elif elements == 8:
