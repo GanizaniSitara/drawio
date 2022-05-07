@@ -90,17 +90,7 @@ def get_layout_size(elements):
         return 6, 4
     elif elements == 24:
         return 6, 4
-    elif elements == 25:
-        return 6, 5
-    elif elements == 26:
-        return 6, 5
-    elif elements == 27:
-        return 6, 5
-    elif elements == 28:
-        return 6, 5
-    elif elements == 29:
-        return 6, 5
-    elif elements == 30:
+    elif elements in range(25, 30):
         return 6, 5
     elif elements == 31:
         return 7, 5
@@ -112,8 +102,12 @@ def get_layout_size(elements):
         return 7, 5
     elif elements == 35:
         return 7, 5
+    elif elements in range(36, 42):
+        return 7, 6
+    elif elements in range(43, 48):
+        return 8, 6
     else:
-        raise ValueError('Unsupported number of elements.')
+        raise ValueError(f'Unsupported number of elements: {elements}')
 
 
 # mxGraphModel is the true "root" of the graph
@@ -162,22 +156,36 @@ for layer in layers.values():
     root.append(layer)
 
 
-def create_rectangle(parent, x, y, width, height, **kwargs):
-    mxcell = etree.Element('mxCell')
-    mxcell.set('id', id_generator())
-    mxcell.set('value', kwargs['value'])
-    mxcell.set('style', kwargs['style'])
-    mxcell.set('parent', parent.get('id'))
-    mxcell.set('vertex', '1')
-    geometry = etree.Element('mxGeometry')
-    geometry.set('x',str(x))
-    geometry.set('y',str(y))
-    geometry.set('width',str(width))
-    geometry.set('height',str(height))
-    geometry.set('as','geometry')
-    mxcell.append(geometry)
-    return mxcell
+def finish(mxGraphModel):
+    data = etree.tostring(mxGraphModel, pretty_print=False)
+    data = drawio_tools.encode_diagram_data(data)
+    # c:\Solutions\Tutorial\output.drawio
+    write_drawio_output(data)
 
+    import xml.dom.minidom
+    dom = xml.dom.minidom.parseString(etree.tostring(mxGraphModel))
+    pretty_xml_as_string = dom.toprettyxml()
+    print(pretty_xml_as_string)
+
+def create_rectangle(parent, x, y, width, height, **kwargs):
+    try:
+        mxcell = etree.Element('mxCell')
+        mxcell.set('id', id_generator())
+        mxcell.set('value', kwargs['value'])
+        mxcell.set('style', kwargs['style'])
+        mxcell.set('parent', parent.get('id'))
+        mxcell.set('vertex', '1')
+        geometry = etree.Element('mxGeometry')
+        geometry.set('x',str(x))
+        geometry.set('y',str(y))
+        geometry.set('width',str(width))
+        geometry.set('height',str(height))
+        geometry.set('as','geometry')
+        mxcell.append(geometry)
+        return mxcell
+    except:
+        print(kwargs)
+        RuntimeError('create_rectangle failed')
 
 class Application:
     height = 80
@@ -296,15 +304,12 @@ class Application:
         #style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=1;strokeColor=none;fontFamily=Expert Sans Regular;spacing=0;verticalAlign=top;fillColor=#FFC107;"
         #style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=1;strokeColor=none;fontFamily=Expert Sans Regular;spacing=0;verticalAlign=top;fillColor=#F44336;"
 
-
-
-
 class Level2:
     def __init__(self, name):
         self.name = name
         self.applications = []
-        self.grid_y = 0
-        self.grid_x = 0
+        self.y = 0
+        self.x = 0
         self.vertical_spacing = 10
         self.horizontal_spacing = 10
         self.vertical_elements = 0
@@ -331,12 +336,26 @@ class Level2:
     def placements(self):
         return list(it.product(range(self.horizontal_elements),range(self.vertical_elements)))
 
+    def appender(self, root):
+        container = create_rectangle(parent=layers['Containers'],
+                                     value=self.name,
+                                     style = 'rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=none;verticalAlign=bottom;spacing=10;fontStyle=0;fontSize=24;fontFamily=Expert Sans Regular;',
+                                     x=self.x, y=self.y, width=self.width(), height=self.height())
+        root.append(container)
+        # Applications
+        for i, app in enumerate(self.applications):
+            app.x = self.x + 10 + self.placements()[i][0] * (Application.width + 10)
+            app.y = self.y + 10 + self.placements()[i][1] * (Application.height + 10)
+            app.appender(root)
+
+
 class Level1:
     def __init__(self, name):
         self.name = name
         self.level2s = []
-        self.grid_y = 0
-        self.grid_x = 0
+        self.y = 0
+        self.x = 0
+        self.placed = False
 
     # def number_of_elements(self):
     #     return self.vertical * self.horizontal
@@ -357,18 +376,21 @@ class Level1:
     def __str__(self):
         return 'Leve1: %s %s %s %s' % (self.name, self.vertical, self.horizontal)
 
+    def appender(self, root):
+        container = create_rectangle(parent=layers['Containers'], value=self.name,
+                                     style = ';whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=36;fontColor=#333333;strokeColor=none;fillColor=#D6D6D6;verticalAlign=top;spacing=10;fontStyle=0',
+                                     x=self.x, y=self.y, width=self.width(), height=self.height())
+        root.append(container)
 
-def finish(mxGraphModel):
-    data = etree.tostring(mxGraphModel, pretty_print=False)
-    data = drawio.encode_diagram_data(data)
-    # c:\Solutions\Tutorial\output.drawio
-    write_drawio_output(data)
+        # Level2
+        L2_x_cursor = self.x + 10
+        L2_y_cursor = self.y + 70
 
-    import xml.dom.minidom
-    dom = xml.dom.minidom.parseString(etree.tostring(mxGraphModel))
-    pretty_xml_as_string = dom.toprettyxml()
-    print(pretty_xml_as_string)
-
+        for level2 in self.level2s:
+            level2.x = L2_x_cursor
+            level2.y = L2_y_cursor
+            level2.appender(root)
+            L2_x_cursor += level2.width() + 10
 
 
 
@@ -396,44 +418,29 @@ for index, app in df.iterrows():
 
 
 
+levels1s = sorted(level1s, key=lambda x: x.width())
+
 
 # iterate over the structure and create the mxcells
-MAX_PAGE_WIDTH = 1600
+MAX_PAGE_WIDTH = 1000
+if level1s[0].width() > MAX_PAGE_WIDTH:
+    MAX_PAGE_WIDTH = level1s[0].width()
+
 L1_x_cursor = 0
 L1_y_cursor = 0
-for level1 in level1s:
-    if L1_x_cursor + level1.width() > MAX_PAGE_WIDTH:
+previous_level_height = 0
+
+for i in range(len(level1s)):
+    if L1_x_cursor + level1s[i].width() > MAX_PAGE_WIDTH:
         L1_x_cursor = 0
-        L1_y_cursor += level1.height() + 10
+        L1_y_cursor += previous_level_height + 10
 
-    level1.grid_y = L1_y_cursor
-    level1.grid_x = L1_x_cursor
+    level1s[i].y = L1_y_cursor
+    level1s[i].x = L1_x_cursor
+    level1s[i].appender(root)
 
-    # Level1
-    container = create_rectangle(parent=layers['Containers'], value=level1.name,
-                                 style = ';whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=36;fontColor=#333333;strokeColor=none;fillColor=#D6D6D6;verticalAlign=top;spacing=10;fontStyle=0',
-                                 x=level1.grid_x, y=level1.grid_y, width=level1.width(), height=level1.height())
-    root.append(container)
-
-    # Level2
-    L2_x_cursor = L1_x_cursor + 10
-    L2_y_cursor = L1_y_cursor + 70
-    for level2 in level1.level2s:
-        container = create_rectangle(parent=layers['Containers'],
-                                     value=level2.name,
-                                     style = 'rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=none;verticalAlign=bottom;spacing=10;fontStyle=0;fontSize=24;fontFamily=Expert Sans Regular;',
-                                     x=L2_x_cursor, y=L2_y_cursor, width=level2.width(), height=level2.height())
-        root.append(container)
-
-        # Applications
-        for i, app in enumerate(level2.applications):
-            app.x = L2_x_cursor + 10 + level2.placements()[i][0] * (Application.width + 10)
-            app.y = L2_y_cursor + 10 + level2.placements()[i][1] * (Application.height + 10)
-            app.appender(root)
-
-        L2_x_cursor += level2.width() + 10
-
-    L1_x_cursor += level1.width() + 10
+    L1_x_cursor += level1s[i].width() + 10
+    previous_level_height = level1s[i].height()
 
 finish(mxGraphModel)
 
