@@ -104,7 +104,7 @@ def get_layout_size(elements):
         return 7, 5
     elif elements in range(36, 42):
         return 7, 6
-    elif elements in range(43, 48):
+    elif elements in range(43, 49):
         return 8, 6
     else:
         raise ValueError(f'Unsupported number of elements: {elements}')
