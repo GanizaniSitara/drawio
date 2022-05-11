@@ -303,9 +303,9 @@ class Level2:
         spacing, font_size = (10, 20) if len(self.name) > 13 \
                                      and self.width() == Application.width + 2 * self.horizontal_spacing \
                                      else (10, 24)
-        spacing, font_size = (10, 20) if len(self.name) > 25 \
-                                         and self.width() == 2 * Application.width + 3 * self.horizontal_spacing \
-            else (10, 24)
+        spacing, font_size = (6, 24) if len(self.name) > 18 \
+                                    and self.width() == 2 * Application.width + 3 * self.horizontal_spacing \
+                                    else (spacing, font_size)
         container = create_rectangle(parent=layers['Containers'],
                                      value=self.name,
                                      style='rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=none;verticalAlign=bottom;spacing='
@@ -355,7 +355,7 @@ class Level1:
         # print(f"Placing: {self.name} at {self.x},{self.y}")
         spacing, font_size = (6, 24) if len(self.name) > 9 and self.width() == Application.width + 4 * self.horizontal_spacing else (10, 36)
         spacing, font_size = (6, 24) if len(self.name) > 18 and self.width() == 2 * Application.width + 5 * self.horizontal_spacing \
-            else (spacing, font_size)
+                             else (spacing, font_size)
 
         container = create_rectangle(parent=layers['Containers'], value=self.name,
                                      style=';whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize='
@@ -432,7 +432,7 @@ def __main__(file):
     except Exception as e:
         print(e)
         print(f"Issue reading:{input_file}")
-        sys.exit(1)
+        return
 
     # build the structure
     level1s = []
@@ -474,15 +474,21 @@ def __main__(file):
             L1_x_cursor += level1s[i].width() + 10
             previous_level_height = level1s[i].height()
             for j in range(i + 1, len(level1s)):
-                if L1_x_cursor + level1s[j].width() <= MAX_PAGE_WIDTH:
-                    level1s[j].x = L1_x_cursor
-                    level1s[j].y = L1_y_cursor
-                    level1s[j].appender(root)
-                    level1s[j].placed = True
-                    L1_x_cursor += level1s[j].width() + 10
-                    if level1s[j].height() > previous_level_height:
-                        previous_level_height = level1s[j].height()
+                if not level1s[j].placed:
+                    if L1_x_cursor + level1s[j].width() <= MAX_PAGE_WIDTH:
+                        level1s[j].x = L1_x_cursor
+                        level1s[j].y = L1_y_cursor
+                        level1s[j].appender(root)
+                        level1s[j].placed = True
+                        L1_x_cursor += level1s[j].width() + 10
+                        if level1s[j].height() > previous_level_height:
+                            previous_level_height = level1s[j].height()
             L1_x_cursor = 0
             L1_y_cursor += previous_level_height + 10
             previous_level_height = 0
     finish(mxGraphModel)
+
+if sys.stdin and sys.stdin.isatty():
+    # running interactively
+    print("Running interactively")
+    __main__(sys.argv[1])
