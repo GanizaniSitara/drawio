@@ -4,10 +4,12 @@ import random
 import drawio_tools
 import pandas as pd
 import itertools as it
+import sys
 import math
+import csv
 
 
-def write_drawio_output(data):
+def write_drawio_output(data, filename='output.drawio'):
     # create XML
     root = etree.Element('mxfile')
     root.set('host', 'Electron')
@@ -26,7 +28,7 @@ def write_drawio_output(data):
     root.append(child)
 
     tree = etree.ElementTree(root)
-    tree.write('output.drawio')
+    tree.write(filename)
 
 
 # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits
@@ -71,91 +73,52 @@ def get_layout_size(elements):
         return 6, 2
     elif elements == 12:
         return 6, 2
-    elif elements == 13:
-        return 5, 3
-    elif elements == 14:
-        return 5, 3
-    elif elements == 15:
-        return 5, 3
-    elif elements in range(16, 21):
-        return 5, 4
-    elif elements in range(21, 25):
+    elif elements in range(13, 19):
+        return 6, 3
+    elif elements in range(19, 25):
         return 6, 4
-    elif elements in range(25, 30):
+    elif elements in range(25, 31):
         return 6, 5
-    elif elements == 31:
+    elif elements in range(31, 36):
         return 7, 5
-    elif elements == 32:
-        return 7, 5
-    elif elements == 33:
-        return 7, 5
-    elif elements == 34:
-        return 7, 5
-    elif elements == 35:
-        return 7, 5
-    elif elements in range(36, 42):
+    elif elements in range(36, 43):
         return 7, 6
-    elif elements in range(43, 49):
-        return 8, 6
+    elif elements in range(43, 50):
+        return 7, 7
+    elif elements in range(50, 57):
+        return 7, 8
+    elif elements in range(57, 64):
+        return 7, 9
+    elif elements in range(64, 71):
+        return 7, 10
+    elif elements in range(71, 78):
+        return 7, 11
+    elif elements in range(78, 85):
+        return 7, 12
+    elif elements in range(85, 92):
+        return 7, 13
+    elif elements > 91:
+        phi = (1 + math.sqrt(5)) / 2
+        short_edge = math.floor((math.sqrt(elements * phi)) / phi)
+        long_edge = math.ceil(elements / short_edge)
+        return short_edge, long_edge
     else:
         raise ValueError(f'Unsupported number of elements: {elements}')
 
 
-# mxGraphModel is the true "root" of the graph
-mxGraphModel = etree.Element('mxGraphModel')
-mxGraphModel.set('dx', '981')
-mxGraphModel.set('dy', '650')
-mxGraphModel.set('grid', '1')
-mxGraphModel.set('gridSize', '10')
-mxGraphModel.set('guides', '1')
-mxGraphModel.set('tooltips', '1')
-mxGraphModel.set('connect', '1')
-mxGraphModel.set('arrows', '1')
-mxGraphModel.set('fold', '1')
-mxGraphModel.set('page', '1')
-mxGraphModel.set('pageScale', '1')
-mxGraphModel.set('pageWidth', '816')
-mxGraphModel.set('pageHeight', '1056')
-mxGraphModel.set('math', '0')
-mxGraphModel.set('shadow', '0')
-root = etree.Element('root')
-mxGraphModel.append(root)
-# top cell always there, layers inherit from it
-mxcell = etree.Element('mxCell')
-mxcell.set('id', '0')
-root.append(mxcell)
-# background layer, always there, we don't draw on it
-background = etree.Element('mxCell')
-background.set('id', '1')
-background.set('style', 'locked=1')
-background.set('parent', '0')
-background.set('visible', '0')
-root.append(background)
 
-# back to front order, lowest layer first
-# while building out dict of layers
-layers = {}
-layers['Containers'] = create_layer('Containers')
-layers['Applications'] = create_layer('Applications')
-layers['Strategy'] = create_layer('Strategy')
-layers['Resilience'] = create_layer('Resilience')
-layers['Hosting'] = create_layer('Hosting')
-layers['Metrics'] = create_layer('Metrics')
-layers['TransactionCycle'] = create_layer('TransactionCycle')
-for layer in layers.values():
-    root.append(layer)
 
 
 def finish(mxGraphModel):
     data = etree.tostring(mxGraphModel, pretty_print=False)
     data = drawio_tools.encode_diagram_data(data)
     # c:\Solutions\Tutorial\output.drawio
-    write_drawio_output(data)
+    write_drawio_output(data, input_file + '.drawio')
 
-    import xml.dom.minidom
-    dom = xml.dom.minidom.parseString(etree.tostring(mxGraphModel))
-    pretty_xml_as_string = dom.toprettyxml()
-    print(pretty_xml_as_string)
+    # import xml.dom.minidom
+    # dom = xml.dom.minidom.parseString(etree.tostring(mxGraphModel))
+    # pretty_xml_as_string = dom.toprettyxml()
+    # print(pretty_xml_as_string)
 
 
 def create_rectangle(parent, x, y, width, height, **kwargs):
@@ -340,6 +303,9 @@ class Level2:
         spacing, font_size = (10, 20) if len(self.name) > 13 \
                                      and self.width() == Application.width + 2 * self.horizontal_spacing \
                                      else (10, 24)
+        spacing, font_size = (10, 20) if len(self.name) > 25 \
+                                         and self.width() == 2 * Application.width + 3 * self.horizontal_spacing \
+            else (10, 24)
         container = create_rectangle(parent=layers['Containers'],
                                      value=self.name,
                                      style='rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=none;verticalAlign=bottom;spacing='
@@ -384,8 +350,13 @@ class Level1:
         return 'Leve1: %s %s %s %s' % (self.name, self.vertical, self.horizontal)
 
     def appender(self, root):
+        self.level2s = sorted(self.level2s, key=lambda x: len(x.applications), reverse=True)
+
         # print(f"Placing: {self.name} at {self.x},{self.y}")
         spacing, font_size = (6, 24) if len(self.name) > 9 and self.width() == Application.width + 4 * self.horizontal_spacing else (10, 36)
+        spacing, font_size = (6, 24) if len(self.name) > 18 and self.width() == 2 * Application.width + 5 * self.horizontal_spacing \
+            else (spacing, font_size)
+
         container = create_rectangle(parent=layers['Containers'], value=self.name,
                                      style=';whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize='
                                            + str(font_size)
@@ -405,59 +376,113 @@ class Level1:
             L2_x_cursor += level2.width() + 10
 
 
-df = pd.read_csv('Application_Diagram_Builder.csv')
 
-# build the structure
-level1s = []
-for index, app in df.iterrows():
-    L1 = next((x for x in level1s if x.name == app['Level1']), None)
 
-    if not L1:
-        L1 = Level1(app['Level1'])
-        level1s.append(L1)
+def __main__(file):
+    global input_file
+    input_file = file
 
-    L2 = next((x for x in L1.level2s if x.name == app['Level2']), None)
+    # mxGraphModel is the true "root" of the graph
+    mxGraphModel = etree.Element('mxGraphModel')
+    mxGraphModel.set('dx', '981')
+    mxGraphModel.set('dy', '650')
+    mxGraphModel.set('grid', '1')
+    mxGraphModel.set('gridSize', '10')
+    mxGraphModel.set('guides', '1')
+    mxGraphModel.set('tooltips', '1')
+    mxGraphModel.set('connect', '1')
+    mxGraphModel.set('arrows', '1')
+    mxGraphModel.set('fold', '1')
+    mxGraphModel.set('page', '1')
+    mxGraphModel.set('pageScale', '1')
+    mxGraphModel.set('pageWidth', '816')
+    mxGraphModel.set('pageHeight', '1056')
+    mxGraphModel.set('math', '0')
+    mxGraphModel.set('shadow', '0')
+    root = etree.Element('root')
+    mxGraphModel.append(root)
+    # top cell always there, layers inherit from it
+    mxcell = etree.Element('mxCell')
+    mxcell.set('id', '0')
+    root.append(mxcell)
+    # background layer, always there, we don't draw on it
+    background = etree.Element('mxCell')
+    background.set('id', '1')
+    background.set('style', 'locked=1')
+    background.set('parent', '0')
+    background.set('visible', '0')
+    root.append(background)
 
-    if not L2:
-        L2 = Level2(app['Level2'])
-        L1.level2s.append(L2)
+    # back to front order, lowest layer first
+    # while building out dict of layers
+    global layers
+    layers = {}
+    layers['Containers'] = create_layer('Containers')
+    layers['Applications'] = create_layer('Applications')
+    layers['Strategy'] = create_layer('Strategy')
+    layers['Resilience'] = create_layer('Resilience')
+    layers['Hosting'] = create_layer('Hosting')
+    layers['Metrics'] = create_layer('Metrics')
+    layers['TransactionCycle'] = create_layer('TransactionCycle')
+    for layer in layers.values():
+        root.append(layer)
 
-    L2.applications.append(Application(app['AppName'], TC=app['TC'], StatusRAG=app['StatusRAG'], Status=app['Status']
-                                       , HostingPercent=app['HostingPercent'], HostingPattern1=app['HostingPattern1'],
-                                       HostingPattern2=app['HostingPattern2'], Arrow1=app['Arrow1'],
-                                       Arrow2=app['Arrow2']))
+    try:
+        df = pd.read_csv(input_file, quoting=csv.QUOTE_ALL)
+    except Exception as e:
+        print(e)
+        print(f"Issue reading:{input_file}")
+        sys.exit(1)
 
-level1s = sorted(level1s, key=lambda x: x.width(), reverse=True)
+    # build the structure
+    level1s = []
+    for index, app in df.iterrows():
+        L1 = next((x for x in level1s if x.name == app['Level1']), None)
 
-# iterate over the structure and create the mxcells
-MAX_PAGE_WIDTH = 1600
-if level1s[0].width() > MAX_PAGE_WIDTH:
-    MAX_PAGE_WIDTH = level1s[0].width()
+        if not L1:
+            L1 = Level1(app['Level1'])
+            level1s.append(L1)
 
-L1_x_cursor = 0
-L1_y_cursor = 0
-previous_level_height = 0
+        L2 = next((x for x in L1.level2s if x.name == app['Level2']), None)
 
-for i in range(len(level1s)):
-    if not level1s[i].placed:
-        level1s[i].x = L1_x_cursor
-        level1s[i].y = L1_y_cursor
-        level1s[i].appender(root)
-        level1s[i].placed = True
-        L1_x_cursor += level1s[i].width() + 10
-        previous_level_height = level1s[i].height()
-        for j in range(i + 1, len(level1s)):
-            if L1_x_cursor + level1s[j].width() <= MAX_PAGE_WIDTH:
-                level1s[j].x = L1_x_cursor
-                level1s[j].y = L1_y_cursor
-                level1s[j].appender(root)
-                level1s[j].placed = True
-                L1_x_cursor += level1s[j].width() + 10
-                if level1s[j].height() > previous_level_height:
-                    previous_level_height = level1s[j].height()
-        L1_x_cursor = 0
-        L1_y_cursor += previous_level_height + 10
-        previous_level_height = 0
-finish(mxGraphModel)
+        if not L2:
+            L2 = Level2(app['Level2'])
+            L1.level2s.append(L2)
 
-exit(-1)
+        L2.applications.append(Application(app['AppName'], TC=app['TC'], StatusRAG=app['StatusRAG'], Status=app['Status']
+                                           , HostingPercent=app['HostingPercent'], HostingPattern1=app['HostingPattern1'],
+                                           HostingPattern2=app['HostingPattern2'], Arrow1=app['Arrow1'],
+                                           Arrow2=app['Arrow2']))
+
+    level1s = sorted(level1s, key=lambda x: x.width(), reverse=True)
+
+    # iterate over the structure and create the mxcells
+    MAX_PAGE_WIDTH = 1600
+    if level1s[0].width() > MAX_PAGE_WIDTH:
+        MAX_PAGE_WIDTH = level1s[0].width()
+
+    L1_x_cursor = 0
+    L1_y_cursor = 0
+    previous_level_height = 0
+
+    for i in range(len(level1s)):
+        if not level1s[i].placed:
+            level1s[i].x = L1_x_cursor
+            level1s[i].y = L1_y_cursor
+            level1s[i].appender(root)
+            level1s[i].placed = True
+            L1_x_cursor += level1s[i].width() + 10
+            previous_level_height = level1s[i].height()
+            for j in range(i + 1, len(level1s)):
+                if L1_x_cursor + level1s[j].width() <= MAX_PAGE_WIDTH:
+                    level1s[j].x = L1_x_cursor
+                    level1s[j].y = L1_y_cursor
+                    level1s[j].appender(root)
+                    level1s[j].placed = True
+                    L1_x_cursor += level1s[j].width() + 10
+                    if level1s[j].height() > previous_level_height:
+                        previous_level_height = level1s[j].height()
+            L1_x_cursor = 0
+            L1_y_cursor += previous_level_height + 10
+            previous_level_height = 0
+    finish(mxGraphModel)
