@@ -139,7 +139,33 @@ def create_rectangle(parent, x, y, width, height, **kwargs):
         return mxcell
     except:
         print(kwargs)
+        print("RuntimeError: create_rectangle")
         RuntimeError('create_rectangle failed')
+
+def create_linked_rectangle(parent, x, y, width, height, **kwargs):
+    try:
+        UserObject = etree.Element('UserObject')
+        UserObject.set('id', id_generator())
+        UserObject.set('link', kwargs['link'])
+        UserObject.set('label', kwargs['value'])
+        mxcell = etree.Element('mxCell')
+        mxcell.set('id', id_generator())
+        mxcell.set('style', kwargs['style'])
+        mxcell.set('parent', parent.get('id'))
+        mxcell.set('vertex', '1')
+        geometry = etree.Element('mxGeometry')
+        geometry.set('x', str(x))
+        geometry.set('y', str(y))
+        geometry.set('width', str(width))
+        geometry.set('height', str(height))
+        geometry.set('as', 'geometry')
+        mxcell.append(geometry)
+        UserObject.append(mxcell)
+        return UserObject
+    except:
+        print(kwargs)
+        print("RuntimeError: create_linked_rectangle failed")
+        RuntimeError('create_linked_rectangle failed')
 
 
 class Application:
@@ -173,9 +199,14 @@ class Application:
 
     def appender(self, root):
         # Base app rectangle
-        container = create_rectangle(parent=layers['Applications'], value=self.name,
-                                     style='rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=10;arcSize=4;',
-                                     x=self.x, y=self.y, width=self.width, height=self.height)
+        if self.kwargs['Link']:
+            container = create_linked_rectangle(parent=layers['Applications'], value=self.name,
+                                         style='rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=10;arcSize=4;',
+                                         x=self.x, y=self.y, width=self.width, height=self.height, link=self.kwargs['Link'])
+        else:
+            container = create_rectangle(parent=layers['Applications'], value=self.name,
+                                         style='rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=10;arcSize=4;',
+                                         x=self.x, y=self.y, width=self.width, height=self.height)
         root.append(container)
 
         # StatusRAG - colour of the shole application on the Strategy layer
@@ -428,7 +459,7 @@ def __main__(file):
         root.append(layer)
 
     try:
-        df = pd.read_csv(input_file, quoting=csv.QUOTE_ALL)
+        df = pd.read_csv(input_file, quoting=csv.QUOTE_ALL, delim_whitespace=False)
     except Exception as e:
         print(e)
         print(f"Issue reading:{input_file}")
@@ -452,7 +483,7 @@ def __main__(file):
         L2.applications.append(Application(app['AppName'], TC=app['TC'], StatusRAG=app['StatusRAG'], Status=app['Status']
                                            , HostingPercent=app['HostingPercent'], HostingPattern1=app['HostingPattern1'],
                                            HostingPattern2=app['HostingPattern2'], Arrow1=app['Arrow1'],
-                                           Arrow2=app['Arrow2']))
+                                           Arrow2=app['Arrow2'],Link=app['Link']))
 
     level1s = sorted(level1s, key=lambda x: x.width(), reverse=True)
 
@@ -488,7 +519,14 @@ def __main__(file):
             previous_level_height = 0
     finish(mxGraphModel)
 
+
+gettrace = getattr(sys, 'gettrace', None)
+
 if sys.stdin and sys.stdin.isatty():
-    # running interactively
     print("Running interactively")
     __main__(sys.argv[1])
+elif gettrace():
+    print("Running in debugger")
+    __main__(sys.argv[1])
+else:
+    print("Running as import")
