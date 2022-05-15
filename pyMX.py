@@ -488,10 +488,12 @@ def __main__(file):
 
     # iterate over the structure and create the mxcells
     MAX_PAGE_WIDTH = 1600
-    if level1s[0].widest_level2() < MAX_PAGE_WIDTH and  level1s[0].width() > MAX_PAGE_WIDTH:
-        print(f"Widest level1's, widest level2:{level1s[0].widest_level2()}")
-        print(f"Would've split at L1")
+    widest_L2 = max(level1.widest_level2() for level1 in level1s)
     
+    if widest_L2 > MAX_PAGE_WIDTH:
+        print(f"Widest level2 wider than MAX_PAGE_WIDTH:{widest_L2}")
+        print(f"We should be stacking within L1")
+
     if level1s[0].width() > MAX_PAGE_WIDTH:
         MAX_PAGE_WIDTH = level1s[0].width()
 
