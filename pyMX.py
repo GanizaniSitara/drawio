@@ -1,12 +1,15 @@
 from lxml import etree
 import string
 import random
+
+import drawio_shared_functions
 import drawio_tools
 import pandas as pd
 import itertools as it
 import sys
 import math
 import csv
+import os
 
 
 def write_drawio_output(data, filename='output.drawio'):
@@ -106,16 +109,10 @@ def get_layout_size(elements):
         raise ValueError(f'Unsupported number of elements: {elements}')
 
 
-def finish(mxGraphModel):
+def finish(mxGraphModel, filename):
     data = etree.tostring(mxGraphModel, pretty_print=False)
     data = drawio_tools.encode_diagram_data(data)
-    # c:\Solutions\Tutorial\output.drawio
-    write_drawio_output(data, input_file + '.drawio')
-
-    # import xml.dom.minidom
-    # dom = xml.dom.minidom.parseString(etree.tostring(mxGraphModel))
-    # pretty_xml_as_string = dom.toprettyxml()
-    # print(pretty_xml_as_string)
+    write_drawio_output(data, filename)
 
 
 def create_rectangle(parent, x, y, width, height, **kwargs):
@@ -124,7 +121,7 @@ def create_rectangle(parent, x, y, width, height, **kwargs):
         mxcell.set('id', id_generator())
         mxcell.set('value', kwargs['value'])
         mxcell.set('style', kwargs['style'])
-        mxcell.set('parent', parent.get('id'))
+        mxcell.set('parent', parent)
         mxcell.set('vertex', '1')
         geometry = etree.Element('mxGeometry')
         geometry.set('x', str(x))
@@ -148,7 +145,7 @@ def create_linked_rectangle(parent, x, y, width, height, **kwargs):
         mxcell = etree.Element('mxCell')
         mxcell.set('id', id_generator())
         mxcell.set('style', kwargs['style'])
-        mxcell.set('parent', parent.get('id'))
+        mxcell.set('parent', parent)
         mxcell.set('vertex', '1')
         geometry = etree.Element('mxGeometry')
         geometry.set('x', str(x))
@@ -197,11 +194,11 @@ class Application:
     def appender(self, root):
         # Base app rectangle
         if self.kwargs['Link']:
-            container = create_linked_rectangle(parent=layers['Applications'], value=self.name,
-                                         style='rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=10;arcSize=4;',
-                                         x=self.x, y=self.y, width=self.width, height=self.height, link=self.kwargs['Link'])
+            container = create_linked_rectangle(parent=layer_id(root, 'Applications'), value=self.name,
+                                                style='rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=10;arcSize=4;',
+                                                x=self.x, y=self.y, width=self.width, height=self.height, link=self.kwargs['Link'])
         else:
-            container = create_rectangle(parent=layers['Applications'], value=self.name,
+            container = create_rectangle(parent=layer_id(root, 'Applications'), value=self.name,
                                          style='rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=10;arcSize=4;',
                                          x=self.x, y=self.y, width=self.width, height=self.height)
         root.append(container)
@@ -213,7 +210,7 @@ class Application:
             self.style = 'rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=11;arcSize=4;fillColor=#fff2cc;strokeColor=#d6b656;'
         elif self.kwargs['StatusRAG'] == 'green':
             self.style = 'rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=11;arcSize=4;fillColor=#D5E8D4;strokeColor=#82b366;'
-        container = create_rectangle(parent=layers['Strategy'], value=self.name,
+        container = create_rectangle(parent=layer_id(root, 'Strategy'), value=self.name,
                                      style=self.style,
                                      x=self.x, y=self.y, width=self.width, height=self.height)
         root.append(container)
@@ -225,13 +222,13 @@ class Application:
             self.style = 'rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=11;arcSize=4;fillColor=#f9f7ed;strokeColor=#36393d;'
         elif self.kwargs['Status'] == 'green':
             self.style = 'rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=11;arcSize=4;fillColor=#dae8fc;strokeColor=#6c8ebf;'
-        container = create_rectangle(parent=layers['Resilience'], value=self.name,
+        container = create_rectangle(parent=layer_id(root,'Resilience'), value=self.name,
                                      style=self.style,
                                      x=self.x, y=self.y, width=self.width, height=self.height)
         root.append(container)
 
         # TC - TC indicator
-        container = create_rectangle(parent=layers['TransactionCycle'], value=str(self.kwargs['TC']),
+        container = create_rectangle(parent=layer_id(root, 'TransactionCycle'), value=str(self.kwargs['TC']),
                                      style='text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;labelBackgroundColor=none;fontFamily=Helvetica;fontStyle=1;fontSize=14;fontColor=#333333;',
                                      x=self.x + 1, y=self.y + 1, width=30, height=20)
         root.append(container)
@@ -239,31 +236,31 @@ class Application:
         # Harvey - Harvey ball
         angle = self.kwargs['HostingPercent'] / 100
         if angle == 1:
-            container = create_rectangle(parent=layers['Hosting'], value='',
+            container = create_rectangle(parent=layer_id(root, 'Hosting'), value='',
                                          style='ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeColor=none;fillColor=#333333;',
                                          x=self.x + 5, y=self.y + 52, width=25, height=25)
             root.append(container)
         elif angle != 0:
-            container = create_rectangle(parent=layers['Hosting'], value='',
+            container = create_rectangle(parent=layer_id(root, 'Hosting'), value='',
                                          style='verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.pie;startAngle=' + str(
                                              1 - angle) + ';endAngle=1;strokeWidth=5;strokeColor=none;aspect=fixed;direction=east;fillColor=#333333;',
                                          x=self.x + 5, y=self.y + 52, width=25, height=25)
             root.append(container)
 
         # HostingPattern1
-        container = create_rectangle(parent=layers['Hosting'], value='',
+        container = create_rectangle(parent=layer_id(root, 'Hosting'), value='',
                                      style=self.get_style_for_hosting_pattern(self.kwargs['HostingPattern1']),
                                      x=self.x + 40, y=self.y + 52, width=25, height=25)
         root.append(container)
 
         # Hosting Pattern2
-        container = create_rectangle(parent=layers['Hosting'], value='',
+        container = create_rectangle(parent=layer_id(root, 'Hosting'), value='',
                                      style=self.get_style_for_hosting_pattern(self.kwargs['HostingPattern2']),
                                      x=self.x + 68, y=self.y + 52, width=25, height=25)
         root.append(container)
 
         # Arrow1
-        container = create_rectangle(parent=layers['Metrics'], value='',
+        container = create_rectangle(parent=layer_id(root,'Metrics'), value='',
                                      style="html=1;shadow=0;dashed=0;align=center;verticalAlign=middle;shape=mxgraph.arrows2.arrow;dy=0.5;dx=13.86;direction=" + (
                                          "north" if self.kwargs[
                                                         'Arrow1'] == 'up' else "south") + ";notch=0;strokeColor=#FFFFFF;strokeWidth=1;fillColor=#333333;fontFamily=Expert Sans Regular;",
@@ -271,7 +268,7 @@ class Application:
         root.append(container)
 
         # Arrow2
-        container = create_rectangle(parent=layers['Metrics'], value='',
+        container = create_rectangle(parent=layer_id(root,'Metrics'), value='',
                                      style="html=1;shadow=0;dashed=0;align=center;verticalAlign=middle;shape=mxgraph.arrows2.arrow;dy=0.5;dx=13.86;direction=" + (
                                          "north" if self.kwargs[
                                                         'Arrow2'] == 'up' else "south") + ";notch=0;strokeColor=#FFFFFF;strokeWidth=1;fillColor=#333333;fontFamily=Expert Sans Regular;",
@@ -280,7 +277,7 @@ class Application:
 
         # Metric
         (self.x + self.y)
-        container = create_rectangle(parent=layers['Metrics'], value='',
+        container = create_rectangle(parent=layer_id(root,'Metrics'), value='',
                                      style="html=1;shadow=0;dashed=0;align=center;verticalAlign=middle;shape=mxgraph.arrows2.arrow;dy=0.5;dx=13.86;direction=" + (
                                          "north" if self.kwargs[
                                                         'Arrow2'] == 'up' else "south") + ";notch=0;strokeColor=#FFFFFF;strokeWidth=1;fillColor=#333333;fontFamily=Expert Sans Regular;",
@@ -335,7 +332,7 @@ class Level2:
         spacing, font_size = (6, 24) if len(self.name) > 18 \
                                     and self.width() == 2 * Application.width + 3 * self.horizontal_spacing \
                                     else (spacing, font_size)
-        container = create_rectangle(parent=layers['Containers'],
+        container = create_rectangle(parent=layer_id(root,'Containers'),
                                      value=self.name,
                                      style='rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=none;verticalAlign=bottom;spacing='
                                         + str(spacing) + ';fontStyle=0;fontSize='
@@ -347,6 +344,53 @@ class Level2:
             app.x = self.x + 10 + self.placements()[i][0] * (Application.width + 10)
             app.y = self.y + 10 + self.placements()[i][1] * (Application.height + 10)
             app.appender(root)
+
+    def render_partial_views(self, file_name, level1_name):
+        # mxGraphModel is the true "root" of the graph
+        mxGraphModel = etree.Element('mxGraphModel')
+        mxGraphModel.set('dx', '981')
+        mxGraphModel.set('dy', '650')
+        mxGraphModel.set('grid', '1')
+        mxGraphModel.set('gridSize', '10')
+        mxGraphModel.set('guides', '1')
+        mxGraphModel.set('tooltips', '1')
+        mxGraphModel.set('connect', '1')
+        mxGraphModel.set('arrows', '1')
+        mxGraphModel.set('fold', '1')
+        mxGraphModel.set('page', '1')
+        mxGraphModel.set('pageScale', '1')
+        mxGraphModel.set('pageWidth', '816')
+        mxGraphModel.set('pageHeight', '1056')
+        mxGraphModel.set('math', '0')
+        mxGraphModel.set('shadow', '0')
+        root = etree.Element('root')
+        mxGraphModel.append(root)
+        mxcell = etree.Element('mxCell')
+        mxcell.set('id', '0')
+        root.append(mxcell)
+        background = etree.Element('mxCell') # background layer, always there, we don't draw on it
+        background.set('id', '1')
+        background.set('style', 'locked=1')
+        background.set('parent', '0')
+        background.set('visible', '0')
+        root.append(background)
+
+        # back to front order, lowest layer first
+        layers_L2 = {}
+        layers_L2['Containers'] = create_layer('Containers')
+        layers_L2['Applications'] = create_layer('Applications')
+        layers_L2['Strategy'] = create_layer('Strategy')
+        layers_L2['Resilience'] = create_layer('Resilience')
+        layers_L2['Hosting'] = create_layer('Hosting')
+        layers_L2['Metrics'] = create_layer('Metrics')
+        layers_L2['TransactionCycle'] = create_layer('TransactionCycle')
+        for layer in layers_L2.values():
+            root.append(layer)
+        # this is destructive!
+        self.x = 0
+        self.y = 0
+        self.appender(root)
+        finish(mxGraphModel, file_name + '_' + level1_name + '_' + self.name + '.drawio')
 
 
 class Level1:
@@ -389,7 +433,8 @@ class Level1:
         spacing, font_size = (6, 24) if len(self.name) > 18 and self.width() == 2 * Application.width + 5 * self.horizontal_spacing \
                              else (spacing, font_size)
 
-        container = create_rectangle(parent=layers['Containers'], value=self.name,
+
+        container = create_rectangle(parent=layer_id(root,'Containers'), value=self.name,
                                      style=';whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize='
                                            + str(font_size)
                                            + ';fontColor=#333333;strokeColor=none;fillColor=#D6D6D6;verticalAlign=top;spacing='
@@ -408,8 +453,65 @@ class Level1:
             L2_x_cursor += level2.width() + 10
 
 
+def get_diagram_root():
+    mxGraphModel = etree.Element('mxGraphModel')
+    mxGraphModel.set('dx', '981')
+    mxGraphModel.set('dy', '650')
+    mxGraphModel.set('grid', '1')
+    mxGraphModel.set('gridSize', '10')
+    mxGraphModel.set('guides', '1')
+    mxGraphModel.set('tooltips', '1')
+    mxGraphModel.set('connect', '1')
+    mxGraphModel.set('arrows', '1')
+    mxGraphModel.set('fold', '1')
+    mxGraphModel.set('page', '1')
+    mxGraphModel.set('pageScale', '1')
+    mxGraphModel.set('pageWidth', '816')
+    mxGraphModel.set('pageHeight', '1056')
+    mxGraphModel.set('math', '0')
+    mxGraphModel.set('shadow', '0')
+    root = etree.Element('root')
+    mxGraphModel.append(root)
+    # top cell always there, layers inherit from it
+    mxcell = etree.Element('mxCell')
+    mxcell.set('id', '0')
+    root.append(mxcell)
+    # background layer, always there, we don't draw on it
+    background = etree.Element('mxCell')
+    background.set('id', '1')
+    background.set('style', 'locked=1')
+    background.set('parent', '0')
+    background.set('visible', '0')
+    root.append(background)
+    return mxGraphModel
+
+
+def append_diagram_layers(root):
+    layers = {}
+    layers['Containers'] = create_layer('Containers')
+    layers['Applications'] = create_layer('Applications')
+    layers['Strategy'] = create_layer('Strategy')
+    layers['Resilience'] = create_layer('Resilience')
+    layers['Hosting'] = create_layer('Hosting')
+    layers['Metrics'] = create_layer('Metrics')
+    layers['TransactionCycle'] = create_layer('TransactionCycle')
+    for layer in layers.values():
+        root.append(layer)
+    return root
+
+
+def render_partial_views_at_L2(file_name, level1s):
+    for level1 in level1s:
+        for level2 in level1.level2s:
+            level2.render_partial_views(file_name, level1.name)
+
+
+def layer_id(root, name):
+    for node in root.findall('.//mxCell[@parent="0"][@value="' + name + '"]'):
+        return node.get('id')
+
 def __main__(file):
-    global input_file
+    # global input_file
     input_file = file
 
     # mxGraphModel is the true "root" of the graph
@@ -445,7 +547,7 @@ def __main__(file):
 
     # back to front order, lowest layer first
     # while building out dict of layers
-    global layers
+    #global layers
     layers = {}
     layers['Containers'] = create_layer('Containers')
     layers['Applications'] = create_layer('Applications')
@@ -456,6 +558,7 @@ def __main__(file):
     layers['TransactionCycle'] = create_layer('TransactionCycle')
     for layer in layers.values():
         root.append(layer)
+
 
     try:
         df = pd.read_csv(input_file, quoting=csv.QUOTE_ALL, delim_whitespace=False)
@@ -489,7 +592,7 @@ def __main__(file):
     # iterate over the structure and create the mxcells
     MAX_PAGE_WIDTH = 1600
     widest_L2 = max(level1.widest_level2() for level1 in level1s)
-    
+
     if widest_L2 > MAX_PAGE_WIDTH:
         print(f"Widest level2 wider than MAX_PAGE_WIDTH:{widest_L2}")
         print(f"We should be stacking within L1")
@@ -522,7 +625,16 @@ def __main__(file):
             L1_x_cursor = 0
             L1_y_cursor += previous_level_height + 10
             previous_level_height = 0
-    finish(mxGraphModel)
+    finish(mxGraphModel, input_file + '.drawio')
+
+    render_partial_views_at_L2(input_file, level1s)
+
+    drawio_shared_functions.pretty_print(mxGraphModel)
+
+    os.system('"C:\Program Files\draw.io\draw.io.exe" ' + input_file + ".drawio")
+
+
+
 
 
 gettrace = getattr(sys, 'gettrace', None)
