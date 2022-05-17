@@ -302,17 +302,18 @@ class Level2:
         self.vertical_elements = 0
         self.horizontal_elements = 0
 
-    # def grid_total(self):
-    #     return self.vertical * self.horizontal
+    def append(self,app):
+        self.applications.append(app)
+        self.vertical_elements, self.horizontal_elements = get_layout_size(len(self.applications))
 
     def height(self):
-        self.vertical_elements, self.horizontal_elements = get_layout_size(len(self.applications))
+        #self.vertical_elements, self.horizontal_elements = get_layout_size(len(self.applications))
         ret_val = 70  # header and footer text
         ret_val += self.vertical_elements * Application.height + (self.vertical_elements - 1) * self.vertical_spacing
         return ret_val
 
     def width(self):
-        self.vertical_elements, self.horizontal_elements = get_layout_size(len(self.applications))
+        #self.vertical_elements, self.horizontal_elements = get_layout_size(len(self.applications))
         ret_val = 20  # borders
         ret_val += self.horizontal_elements * Application.width + (
                     self.horizontal_elements - 1) * self.horizontal_spacing
@@ -324,8 +325,13 @@ class Level2:
     def placements(self):
         return list(it.product(range(self.horizontal_elements), range(self.vertical_elements)))
 
-    def appender(self, root):
-        # would need to separate left, right, top, bottom spacing
+    def appender(self, root, transpose=False):
+        if transpose:
+            temp = self.horizontal_elements
+            self.horizontal_elements = self.vertical_elements
+            self.vertical_elements = temp
+
+        # need to separate left, right, top, bottom spacing as we're bleeding into containers
         spacing, font_size = (10, 20) if len(self.name) > 13 \
                                      and self.width() == Application.width + 2 * self.horizontal_spacing \
                                      else (10, 24)
@@ -389,7 +395,7 @@ class Level2:
         # this is destructive!
         self.x = 0
         self.y = 0
-        self.appender(root)
+        self.appender(root, transpose=True)
         finish(mxGraphModel, file_name + '_' + level1_name + '_' + self.name + '.drawio')
 
 
@@ -582,7 +588,8 @@ def __main__(file):
             L2 = Level2(app['Level2'])
             L1.level2s.append(L2)
 
-        L2.applications.append(Application(app['AppName'], TC=app['TC'], StatusRAG=app['StatusRAG'], Status=app['Status']
+        # .applications.
+        L2.append(Application(app['AppName'], TC=app['TC'], StatusRAG=app['StatusRAG'], Status=app['Status']
                                            , HostingPercent=app['HostingPercent'], HostingPattern1=app['HostingPattern1'],
                                            HostingPattern2=app['HostingPattern2'], Arrow1=app['Arrow1'],
                                            Arrow2=app['Arrow2'],Link=app['Link']))
