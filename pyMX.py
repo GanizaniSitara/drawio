@@ -131,13 +131,14 @@ def create_rectangle(parent, x, y, width, height, **kwargs):
         geometry.set('as', 'geometry')
         mxcell.append(geometry)
         return mxcell
-    except:
+    except Exception as e:
+        print(e)
         print(kwargs)
         print("RuntimeError: create_rectangle")
         RuntimeError('create_rectangle failed')
 
 def create_linked_rectangle(parent, x, y, width, height, **kwargs):
-    try:
+    #try:
         UserObject = etree.Element('UserObject')
         UserObject.set('id', id_generator())
         UserObject.set('link', kwargs['link'])
@@ -156,10 +157,11 @@ def create_linked_rectangle(parent, x, y, width, height, **kwargs):
         mxcell.append(geometry)
         UserObject.append(mxcell)
         return UserObject
-    except:
-        print(kwargs)
-        print("RuntimeError: create_linked_rectangle failed")
-        RuntimeError('create_linked_rectangle failed')
+    #except Exception as e:
+    #    print(e)
+    #    print(kwargs)
+    #    print("RuntimeError: create_linked_rectangle failed")
+    #    RuntimeError('create_linked_rectangle failed')
 
 
 class Application:
@@ -448,6 +450,11 @@ class Level1:
                                      x=self.x, y=self.y, width=self.width(), height=self.height())
         root.append(container)
 
+        container = create_linked_rectangle(parent=layer_id(root,'LinkOverlay'), value="",link="/" + (self.name).replace(" ", "+") + "+Detail",
+                                            style='fillColor=none;strokeColor=none;',
+                                            x=self.x, y=self.y, width=self.width(), height=self.height())
+        root.append(container)
+
         # Level2
         L2_x_cursor = self.x + 10
         L2_y_cursor = self.y + 70
@@ -492,7 +499,7 @@ def get_diagram_root():
     return mxGraphModel
 
 
-def append_diagram_layers(root):
+def append_L2_diagram_layers(root):
     layers = {}
     layers['Containers'] = create_layer('Containers')
     layers['Applications'] = create_layer('Applications')
@@ -562,6 +569,7 @@ def __main__(file):
     layers['Hosting'] = create_layer('Hosting')
     layers['Metrics'] = create_layer('Metrics')
     layers['TransactionCycle'] = create_layer('TransactionCycle')
+    layers['LinkOverlay'] = create_layer('LinkOverlay')
     for layer in layers.values():
         root.append(layer)
 
