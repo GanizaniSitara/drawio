@@ -204,6 +204,23 @@ class Application:
                                          x=self.x, y=self.y, width=self.width, height=self.height)
         root.append(container)
 
+        if not (self.kwargs['Controls'] != self.kwargs['Controls']): # using pandas, returns NaN if empty
+            container = create_linked_rectangle(parent=layer_id(root, 'Controls'), value=self.name,
+                                                style='rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=11;arcSize=4;fillColor=#f9f7ed;strokeColor=#36393d;',
+                                                x=self.x, y=self.y, width=self.width, height=self.height,
+                                                link=self.kwargs['Controls'])
+            root.append(container)
+            container = create_linked_rectangle(parent=layer_id(root, 'Controls'), value="CON",
+                                                style="pointerEvents=1;shadow=0;dashed=0;strokeColor=none;fillColor=#505050;labelPosition=right;verticalLabelPosition=middle;verticalAlign=middle;outlineConnect=0;align=left;shape=mxgraph.office.security.lock_with_key_security_blue;aspect=fixed;fontFamily=Expert Sans Regular;fontSize=16;fontStyle=1",
+                                                x=self.x + 100, y=self.y + 52, width="22.69", height="28", link=self.kwargs['Controls'])
+            root.append(container)
+        else:
+            container = create_rectangle(parent=layer_id(root, 'Controls'), value=self.name,
+                                         style='rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=10;arcSize=4;',
+                                         x=self.x, y=self.y, width=self.width, height=self.height)
+            root.append(container)
+
+
         # StatusRAG - colour of the shole application on the Strategy layer
         if self.kwargs['StatusRAG'] == 'red':
             self.style = 'rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=11;arcSize=4;fillColor=#F8CECC;strokeColor=#b85450;'
@@ -507,6 +524,7 @@ def append_layers(root):
     layers['Containers'] = create_layer('Containers')
     layers['Applications'] = create_layer('Applications')
     layers['Strategy'] = create_layer('Strategy')
+    layers['Controls'] = create_layer('Controls')
     layers['Resilience'] = create_layer('Resilience')
     layers['Hosting'] = create_layer('Hosting')
     layers['Metrics'] = create_layer('Metrics')
@@ -557,11 +575,10 @@ def __main__(file):
             L2 = Level2(app['Level2'])
             L1.level2s.append(L2)
 
-        # .applications.
         L2.append(Application(app['AppName'], TC=app['TC'], StatusRAG=app['StatusRAG'], Status=app['Status']
                               , HostingPercent=app['HostingPercent'], HostingPattern1=app['HostingPattern1'],
                               HostingPattern2=app['HostingPattern2'], Arrow1=app['Arrow1'],
-                              Arrow2=app['Arrow2'], Link=app['Link']))
+                              Arrow2=app['Arrow2'], Link=app['Link'], Controls=app['Controls']))
 
     level1s = sorted(level1s, key=lambda x: x.width(), reverse=True)
 
