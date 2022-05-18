@@ -134,37 +134,33 @@ def create_rectangle(parent, x, y, width, height, **kwargs):
     except Exception as e:
         print(e)
         print(kwargs)
-        print("RuntimeError: create_rectangle")
         RuntimeError('create_rectangle failed')
 
 
 def create_linked_rectangle(parent, x, y, width, height, **kwargs):
-    # try:
-    UserObject = etree.Element('UserObject')
-    UserObject.set('id', id_generator())
-    UserObject.set('link', kwargs['link'])
-    UserObject.set('label', kwargs['value'])
-    mxcell = etree.Element('mxCell')
-    mxcell.set('id', id_generator())
-    mxcell.set('style', kwargs['style'])
-    mxcell.set('parent', parent)
-    mxcell.set('vertex', '1')
-    geometry = etree.Element('mxGeometry')
-    geometry.set('x', str(x))
-    geometry.set('y', str(y))
-    geometry.set('width', str(width))
-    geometry.set('height', str(height))
-    geometry.set('as', 'geometry')
-    mxcell.append(geometry)
-    UserObject.append(mxcell)
-    return UserObject
-
-
-# except Exception as e:
-#    print(e)
-#    print(kwargs)
-#    print("RuntimeError: create_linked_rectangle failed")
-#    RuntimeError('create_linked_rectangle failed')
+    try:
+        UserObject = etree.Element('UserObject')
+        UserObject.set('id', id_generator())
+        UserObject.set('link', kwargs['link'])
+        UserObject.set('label', kwargs['value'])
+        mxcell = etree.Element('mxCell')
+        mxcell.set('id', id_generator())
+        mxcell.set('style', kwargs['style'])
+        mxcell.set('parent', parent)
+        mxcell.set('vertex', '1')
+        geometry = etree.Element('mxGeometry')
+        geometry.set('x', str(x))
+        geometry.set('y', str(y))
+        geometry.set('width', str(width))
+        geometry.set('height', str(height))
+        geometry.set('as', 'geometry')
+        mxcell.append(geometry)
+        UserObject.append(mxcell)
+        return UserObject
+    except Exception as e:
+        print(e)
+        print(kwargs)
+        RuntimeError('create_linked_rectangle failed')
 
 
 class Application:
@@ -197,7 +193,6 @@ class Application:
         return style
 
     def appender(self, root):
-        # Base app rectangle
         if self.kwargs['Link']:
             container = create_linked_rectangle(parent=layer_id(root, 'Applications'), value=self.name,
                                                 style='rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=10;arcSize=4;',
@@ -340,77 +335,39 @@ class Level2:
     def __str__(self):
         return 'Level2: %s %s %s %s' % (self.level1, self.level2, self.height, self.width)
 
-    def placements(self):
-        return list(it.product(range(self.horizontal_elements), range(self.vertical_elements)))
+    def placements(self, transpose=False):
+        if transpose:
+            return list(it.product(range(self.vertical_elements), range(self.horizontal_elements)))
+        else:
+            return list(it.product(range(self.horizontal_elements), range(self.vertical_elements)))
 
     def appender(self, root, transpose=False):
-        if transpose:
-            temp = self.horizontal_elements
-            self.horizontal_elements = self.vertical_elements
-            self.vertical_elements = temp
+        height, width = self.dimensions(transpose)
 
         # need to separate left, right, top, bottom spacing as we're bleeding into containers
         spacing, font_size = (10, 20) if len(self.name) > 13 \
                                          and self.width() == Application.width + 2 * self.horizontal_spacing \
-            else (10, 24)
+                                      else (10, 24)
         spacing, font_size = (6, 24) if len(self.name) > 18 \
                                         and self.width() == 2 * Application.width + 3 * self.horizontal_spacing \
-            else (spacing, font_size)
+                                     else (spacing, font_size)
         container = create_rectangle(parent=layer_id(root, 'Containers'),
                                      value=self.name,
                                      style='rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=none;verticalAlign=bottom;spacing='
                                            + str(spacing) + ';fontStyle=0;fontSize='
                                            + str(font_size) + ';fontFamily=Expert Sans Regular;',
-                                     x=self.x, y=self.y, width=self.width(), height=self.height())
+                                     x=self.x, y=self.y, width=width, height=height)
         root.append(container)
         # Applications
         for i, app in enumerate(self.applications):
-            app.x = self.x + 10 + self.placements()[i][0] * (Application.width + 10)
-            app.y = self.y + 10 + self.placements()[i][1] * (Application.height + 10)
+            app.x = self.x + 10 + self.placements(transpose)[i][0] * (Application.width + 10)
+            app.y = self.y + 10 + self.placements(transpose)[i][1] * (Application.height + 10)
             app.appender(root)
 
     def render_partial_views(self, file_name, level1_name):
-        # mxGraphModel is the true "root" of the graph
-        mxGraphModel = etree.Element('mxGraphModel')
-        mxGraphModel.set('dx', '981')
-        mxGraphModel.set('dy', '650')
-        mxGraphModel.set('grid', '1')
-        mxGraphModel.set('gridSize', '10')
-        mxGraphModel.set('guides', '1')
-        mxGraphModel.set('tooltips', '1')
-        mxGraphModel.set('connect', '1')
-        mxGraphModel.set('arrows', '1')
-        mxGraphModel.set('fold', '1')
-        mxGraphModel.set('page', '1')
-        mxGraphModel.set('pageScale', '1')
-        mxGraphModel.set('pageWidth', '816')
-        mxGraphModel.set('pageHeight', '1056')
-        mxGraphModel.set('math', '0')
-        mxGraphModel.set('shadow', '0')
-        root = etree.Element('root')
-        mxGraphModel.append(root)
-        mxcell = etree.Element('mxCell')
-        mxcell.set('id', '0')
-        root.append(mxcell)
-        background = etree.Element('mxCell')  # background layer, always there, we don't draw on it
-        background.set('id', '1')
-        background.set('style', 'locked=1')
-        background.set('parent', '0')
-        background.set('visible', '0')
-        root.append(background)
-
-        # back to front order, lowest layer first
-        layers_L2 = {}
-        layers_L2['Containers'] = create_layer('Containers')
-        layers_L2['Applications'] = create_layer('Applications')
-        layers_L2['Strategy'] = create_layer('Strategy')
-        layers_L2['Resilience'] = create_layer('Resilience')
-        layers_L2['Hosting'] = create_layer('Hosting')
-        layers_L2['Metrics'] = create_layer('Metrics')
-        layers_L2['TransactionCycle'] = create_layer('TransactionCycle')
-        for layer in layers_L2.values():
-            root.append(layer)
-        # this is destructive!
+        mxGraphModel = get_diagram_root()
+        root = mxGraphModel.find("root")
+        append_layers(root)
         self.x = 0
         self.y = 0
         self.appender(root, transpose=True)
@@ -431,7 +388,7 @@ class Level1:
     #     return self.vertical * self.horizontal
 
     def height(self, transpose=False):
-        ret_val = 70 # Header
+        ret_val = 70  # Header
         if not transpose:
             ret_val += max(level2.dimensions(transpose=transpose)[0] for level2 in self.level2s) + self.vertical_spacing
         else:
@@ -445,7 +402,8 @@ class Level1:
             for level2 in self.level2s:
                 ret_val += level2.dimensions(transpose=transpose)[1] + self.horizontal_spacing
         else:
-            ret_val += max(level2.dimensions(transpose=transpose)[1] for level2 in self.level2s) + self.horizontal_spacing
+            ret_val += max(
+                level2.dimensions(transpose=transpose)[1] for level2 in self.level2s) + self.horizontal_spacing
         return ret_val
 
     def dimensions(self, transpose=False):
@@ -491,19 +449,19 @@ class Level1:
             for level2 in self.level2s:
                 level2.x = L2_x_cursor
                 level2.y = L2_y_cursor
-                level2.appender(root, transpose=transpose)
+                level2.appender(root)
                 L2_x_cursor += level2.width() + 10
         else:
             for level2 in self.level2s:
                 level2.x = L2_x_cursor
                 level2.y = L2_y_cursor
-                level2.appender(root, transpose=transpose)
-                L2_y_cursor += level2.height() + 10
+                level2.appender(root, transpose)
+                L2_y_cursor += level2.dimensions(transpose)[0] + 10
 
     def render_partial_views(self, file_name):
         mxGraphModel = get_diagram_root()
         root = mxGraphModel.find("root")
-        append_partial_views_diagram_layers(root)
+        append_layers(root)
         self.x = 0
         self.y = 0
         self.appender(root, transpose=True)
@@ -543,7 +501,8 @@ def get_diagram_root():
     return mxGraphModel
 
 
-def append_partial_views_diagram_layers(root):
+def append_layers(root):
+    # back to front order, lowest layer first
     layers = {}
     layers['Containers'] = create_layer('Containers')
     layers['Applications'] = create_layer('Applications')
@@ -571,60 +530,16 @@ def layer_id(root, name):
 
 
 def __main__(file):
-    # global input_file
-    input_file = file
-
     # mxGraphModel is the true "root" of the graph
-    mxGraphModel = etree.Element('mxGraphModel')
-    mxGraphModel.set('dx', '981')
-    mxGraphModel.set('dy', '650')
-    mxGraphModel.set('grid', '1')
-    mxGraphModel.set('gridSize', '10')
-    mxGraphModel.set('guides', '1')
-    mxGraphModel.set('tooltips', '1')
-    mxGraphModel.set('connect', '1')
-    mxGraphModel.set('arrows', '1')
-    mxGraphModel.set('fold', '1')
-    mxGraphModel.set('page', '1')
-    mxGraphModel.set('pageScale', '1')
-    mxGraphModel.set('pageWidth', '816')
-    mxGraphModel.set('pageHeight', '1056')
-    mxGraphModel.set('math', '0')
-    mxGraphModel.set('shadow', '0')
-    root = etree.Element('root')
-    mxGraphModel.append(root)
-    # top cell always there, layers inherit from it
-    mxcell = etree.Element('mxCell')
-    mxcell.set('id', '0')
-    root.append(mxcell)
-    # background layer, always there, we don't draw on it
-    background = etree.Element('mxCell')
-    background.set('id', '1')
-    background.set('style', 'locked=1')
-    background.set('parent', '0')
-    background.set('visible', '0')
-    root.append(background)
-
-    # back to front order, lowest layer first
-    # while building out dict of layers
-    # global layers
-    layers = {}
-    layers['Containers'] = create_layer('Containers')
-    layers['Applications'] = create_layer('Applications')
-    layers['Strategy'] = create_layer('Strategy')
-    layers['Resilience'] = create_layer('Resilience')
-    layers['Hosting'] = create_layer('Hosting')
-    layers['Metrics'] = create_layer('Metrics')
-    layers['TransactionCycle'] = create_layer('TransactionCycle')
-    layers['LinkOverlay'] = create_layer('LinkOverlay')
-    for layer in layers.values():
-        root.append(layer)
+    mxGraphModel = get_diagram_root()
+    root = mxGraphModel.find("root")
+    append_layers(root)
 
     try:
-        df = pd.read_csv(input_file, quoting=csv.QUOTE_ALL, delim_whitespace=False)
+        df = pd.read_csv(file, quoting=csv.QUOTE_ALL, delim_whitespace=False)
     except Exception as e:
         print(e)
-        print(f"Issue reading:{input_file}")
+        print(f"Issue reading:{file}")
         return
 
     # build the structure
@@ -650,20 +565,13 @@ def __main__(file):
 
     level1s = sorted(level1s, key=lambda x: x.width(), reverse=True)
 
-    # iterate over the structure and create the mxcells
     MAX_PAGE_WIDTH = 1600
-    widest_L2 = max(level1.widest_level2() for level1 in level1s)
-
-    if widest_L2 > MAX_PAGE_WIDTH:
-        print(f"Widest level2 wider than MAX_PAGE_WIDTH:{widest_L2}")
-        print(f"We should be stacking within L1")
 
     if level1s[0].width() > MAX_PAGE_WIDTH:
         MAX_PAGE_WIDTH = level1s[0].width()
 
     L1_x_cursor = 0
     L1_y_cursor = 0
-    previous_level_height = 0
 
     for i in range(len(level1s)):
         if not level1s[i].placed:
@@ -685,14 +593,14 @@ def __main__(file):
                             previous_level_height = level1s[j].height()
             L1_x_cursor = 0
             L1_y_cursor += previous_level_height + 10
-            previous_level_height = 0
-    finish(mxGraphModel, input_file + '.drawio')
 
-    render_partial_views(input_file, level1s)
+    finish(mxGraphModel, file + '.drawio')
+
+    render_partial_views(file, level1s)
 
     drawio_shared_functions.pretty_print(mxGraphModel)
 
-    os.system('"C:\Program Files\draw.io\draw.io.exe" ' + input_file + ".drawio")
+    os.system('"C:\Program Files\draw.io\draw.io.exe" ' + file + ".drawio")
 
 
 gettrace = getattr(sys, 'gettrace', None)
