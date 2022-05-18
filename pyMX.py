@@ -137,31 +137,34 @@ def create_rectangle(parent, x, y, width, height, **kwargs):
         print("RuntimeError: create_rectangle")
         RuntimeError('create_rectangle failed')
 
+
 def create_linked_rectangle(parent, x, y, width, height, **kwargs):
-    #try:
-        UserObject = etree.Element('UserObject')
-        UserObject.set('id', id_generator())
-        UserObject.set('link', kwargs['link'])
-        UserObject.set('label', kwargs['value'])
-        mxcell = etree.Element('mxCell')
-        mxcell.set('id', id_generator())
-        mxcell.set('style', kwargs['style'])
-        mxcell.set('parent', parent)
-        mxcell.set('vertex', '1')
-        geometry = etree.Element('mxGeometry')
-        geometry.set('x', str(x))
-        geometry.set('y', str(y))
-        geometry.set('width', str(width))
-        geometry.set('height', str(height))
-        geometry.set('as', 'geometry')
-        mxcell.append(geometry)
-        UserObject.append(mxcell)
-        return UserObject
-    #except Exception as e:
-    #    print(e)
-    #    print(kwargs)
-    #    print("RuntimeError: create_linked_rectangle failed")
-    #    RuntimeError('create_linked_rectangle failed')
+    # try:
+    UserObject = etree.Element('UserObject')
+    UserObject.set('id', id_generator())
+    UserObject.set('link', kwargs['link'])
+    UserObject.set('label', kwargs['value'])
+    mxcell = etree.Element('mxCell')
+    mxcell.set('id', id_generator())
+    mxcell.set('style', kwargs['style'])
+    mxcell.set('parent', parent)
+    mxcell.set('vertex', '1')
+    geometry = etree.Element('mxGeometry')
+    geometry.set('x', str(x))
+    geometry.set('y', str(y))
+    geometry.set('width', str(width))
+    geometry.set('height', str(height))
+    geometry.set('as', 'geometry')
+    mxcell.append(geometry)
+    UserObject.append(mxcell)
+    return UserObject
+
+
+# except Exception as e:
+#    print(e)
+#    print(kwargs)
+#    print("RuntimeError: create_linked_rectangle failed")
+#    RuntimeError('create_linked_rectangle failed')
 
 
 class Application:
@@ -198,7 +201,8 @@ class Application:
         if self.kwargs['Link']:
             container = create_linked_rectangle(parent=layer_id(root, 'Applications'), value=self.name,
                                                 style='rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=10;arcSize=4;',
-                                                x=self.x, y=self.y, width=self.width, height=self.height, link=self.kwargs['Link'])
+                                                x=self.x, y=self.y, width=self.width, height=self.height,
+                                                link=self.kwargs['Link'])
         else:
             container = create_rectangle(parent=layer_id(root, 'Applications'), value=self.name,
                                          style='rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=10;arcSize=4;',
@@ -224,7 +228,7 @@ class Application:
             self.style = 'rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=11;arcSize=4;fillColor=#f9f7ed;strokeColor=#36393d;'
         elif self.kwargs['Status'] == 'green':
             self.style = 'rounded=1;whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize=14;fontStyle=0;verticalAlign=top;spacing=11;arcSize=4;fillColor=#dae8fc;strokeColor=#6c8ebf;'
-        container = create_rectangle(parent=layer_id(root,'Resilience'), value=self.name,
+        container = create_rectangle(parent=layer_id(root, 'Resilience'), value=self.name,
                                      style=self.style,
                                      x=self.x, y=self.y, width=self.width, height=self.height)
         root.append(container)
@@ -262,7 +266,7 @@ class Application:
         root.append(container)
 
         # Arrow1
-        container = create_rectangle(parent=layer_id(root,'Metrics'), value='',
+        container = create_rectangle(parent=layer_id(root, 'Metrics'), value='',
                                      style="html=1;shadow=0;dashed=0;align=center;verticalAlign=middle;shape=mxgraph.arrows2.arrow;dy=0.5;dx=13.86;direction=" + (
                                          "north" if self.kwargs[
                                                         'Arrow1'] == 'up' else "south") + ";notch=0;strokeColor=#FFFFFF;strokeWidth=1;fillColor=#333333;fontFamily=Expert Sans Regular;",
@@ -270,7 +274,7 @@ class Application:
         root.append(container)
 
         # Arrow2
-        container = create_rectangle(parent=layer_id(root,'Metrics'), value='',
+        container = create_rectangle(parent=layer_id(root, 'Metrics'), value='',
                                      style="html=1;shadow=0;dashed=0;align=center;verticalAlign=middle;shape=mxgraph.arrows2.arrow;dy=0.5;dx=13.86;direction=" + (
                                          "north" if self.kwargs[
                                                         'Arrow2'] == 'up' else "south") + ";notch=0;strokeColor=#FFFFFF;strokeWidth=1;fillColor=#333333;fontFamily=Expert Sans Regular;",
@@ -279,7 +283,7 @@ class Application:
 
         # Metric
         (self.x + self.y)
-        container = create_rectangle(parent=layer_id(root,'Metrics'), value='',
+        container = create_rectangle(parent=layer_id(root, 'Metrics'), value='',
                                      style="html=1;shadow=0;dashed=0;align=center;verticalAlign=middle;shape=mxgraph.arrows2.arrow;dy=0.5;dx=13.86;direction=" + (
                                          "north" if self.kwargs[
                                                         'Arrow2'] == 'up' else "south") + ";notch=0;strokeColor=#FFFFFF;strokeWidth=1;fillColor=#333333;fontFamily=Expert Sans Regular;",
@@ -304,21 +308,33 @@ class Level2:
         self.vertical_elements = 0
         self.horizontal_elements = 0
 
-    def append(self,app):
+    def append(self, app):
         self.applications.append(app)
         self.vertical_elements, self.horizontal_elements = get_layout_size(len(self.applications))
 
-    def height(self):
-        #self.vertical_elements, self.horizontal_elements = get_layout_size(len(self.applications))
+    def dimensions(self, transpose=False):
+        if transpose:
+            temp_x = self.horizontal_elements
+            temp_y = self.vertical_elements
+            return self.height(temp_x), self.width(temp_y)
+        else:
+            return self.height(), self.width()
+
+    def height(self, vertical_elements=None):
+        if vertical_elements is None:
+            vertical_elements = self.vertical_elements
+        # self.vertical_elements, self.horizontal_elements = get_layout_size(len(self.applications))
         ret_val = 70  # header and footer text
-        ret_val += self.vertical_elements * Application.height + (self.vertical_elements - 1) * self.vertical_spacing
+        ret_val += vertical_elements * Application.height + (vertical_elements - 1) * self.vertical_spacing
         return ret_val
 
-    def width(self):
-        #self.vertical_elements, self.horizontal_elements = get_layout_size(len(self.applications))
+    def width(self, horizontal_elements=None):
+        if horizontal_elements is None:
+            horizontal_elements = self.horizontal_elements
+        # self.vertical_elements, self.horizontal_elements = get_layout_size(len(self.applications))
         ret_val = 20  # borders
-        ret_val += self.horizontal_elements * Application.width + (
-                    self.horizontal_elements - 1) * self.horizontal_spacing
+        ret_val += horizontal_elements * Application.width + (
+                horizontal_elements - 1) * self.horizontal_spacing
         return ret_val
 
     def __str__(self):
@@ -335,16 +351,16 @@ class Level2:
 
         # need to separate left, right, top, bottom spacing as we're bleeding into containers
         spacing, font_size = (10, 20) if len(self.name) > 13 \
-                                     and self.width() == Application.width + 2 * self.horizontal_spacing \
-                                     else (10, 24)
+                                         and self.width() == Application.width + 2 * self.horizontal_spacing \
+            else (10, 24)
         spacing, font_size = (6, 24) if len(self.name) > 18 \
-                                    and self.width() == 2 * Application.width + 3 * self.horizontal_spacing \
-                                    else (spacing, font_size)
-        container = create_rectangle(parent=layer_id(root,'Containers'),
+                                        and self.width() == 2 * Application.width + 3 * self.horizontal_spacing \
+            else (spacing, font_size)
+        container = create_rectangle(parent=layer_id(root, 'Containers'),
                                      value=self.name,
                                      style='rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=none;verticalAlign=bottom;spacing='
-                                        + str(spacing) + ';fontStyle=0;fontSize='
-                                        + str(font_size) + ';fontFamily=Expert Sans Regular;',
+                                           + str(spacing) + ';fontStyle=0;fontSize='
+                                           + str(font_size) + ';fontFamily=Expert Sans Regular;',
                                      x=self.x, y=self.y, width=self.width(), height=self.height())
         root.append(container)
         # Applications
@@ -376,7 +392,7 @@ class Level2:
         mxcell = etree.Element('mxCell')
         mxcell.set('id', '0')
         root.append(mxcell)
-        background = etree.Element('mxCell') # background layer, always there, we don't draw on it
+        background = etree.Element('mxCell')  # background layer, always there, we don't draw on it
         background.set('id', '1')
         background.set('style', 'locked=1')
         background.set('parent', '0')
@@ -414,18 +430,26 @@ class Level1:
     # def number_of_elements(self):
     #     return self.vertical * self.horizontal
 
-    def height(self):
-        # Copilot
-        ret_val = 70  # header
-        ret_val += max(level2.height() for level2 in self.level2s) + self.vertical_spacing
+    def height(self, transpose=False):
+        ret_val = 70 # Header
+        if not transpose:
+            ret_val += max(level2.dimensions(transpose=transpose)[0] for level2 in self.level2s) + self.vertical_spacing
+        else:
+            for level2 in self.level2s:
+                ret_val += level2.dimensions(transpose=transpose)[0] + self.vertical_spacing
         return ret_val
 
-    def width(self):
-        # Copilot
+    def width(self, transpose=False):
         ret_val = self.horizontal_spacing
-        for level2 in self.level2s:
-            ret_val += level2.width() + self.horizontal_spacing
+        if not transpose:
+            for level2 in self.level2s:
+                ret_val += level2.dimensions(transpose=transpose)[1] + self.horizontal_spacing
+        else:
+            ret_val += max(level2.dimensions(transpose=transpose)[1] for level2 in self.level2s) + self.horizontal_spacing
         return ret_val
+
+    def dimensions(self, transpose=False):
+        return self.width(transpose=transpose), self.height(transpose=transpose)
 
     def widest_level2(self):
         return max(level2.width() for level2 in self.level2s)
@@ -433,37 +457,57 @@ class Level1:
     def __str__(self):
         return 'Leve1: %s %s %s %s' % (self.name, self.vertical, self.horizontal)
 
-    def appender(self, root):
+    def appender(self, root, transpose=False):
         self.level2s = sorted(self.level2s, key=lambda x: len(x.applications), reverse=True)
 
         # print(f"Placing: {self.name} at {self.x},{self.y}")
-        spacing, font_size = (6, 24) if len(self.name) > 9 and self.width() == Application.width + 4 * self.horizontal_spacing else (10, 36)
-        spacing, font_size = (6, 24) if len(self.name) > 18 and self.width() == 2 * Application.width + 5 * self.horizontal_spacing \
-                             else (spacing, font_size)
+        spacing, font_size = (6, 24) if len(
+            self.name) > 9 and self.width() == Application.width + 4 * self.horizontal_spacing else (10, 36)
+        spacing, font_size = (6, 24) if len(
+            self.name) > 18 and self.width() == 2 * Application.width + 5 * self.horizontal_spacing \
+            else (spacing, font_size)
 
+        width, height = self.dimensions(transpose=transpose)
 
-        container = create_rectangle(parent=layer_id(root,'Containers'), value=self.name,
+        container = create_rectangle(parent=layer_id(root, 'Containers'), value=self.name,
                                      style=';whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize='
                                            + str(font_size)
                                            + ';fontColor=#333333;strokeColor=none;fillColor=#D6D6D6;verticalAlign=top;spacing='
                                            + str(spacing) + ';fontStyle=0',
-                                     x=self.x, y=self.y, width=self.width(), height=self.height())
+                                     x=self.x, y=self.y, width=width, height=height)
         root.append(container)
 
-        container = create_linked_rectangle(parent=layer_id(root,'LinkOverlay'), value="",link="/" + (self.name).replace(" ", "+") + "+Detail",
+        container = create_linked_rectangle(parent=layer_id(root, 'LinkOverlay'), value="",
+                                            link="/" + (self.name).replace(" ", "+") + "+Detail",
                                             style='fillColor=none;strokeColor=none;',
-                                            x=self.x, y=self.y, width=self.width(), height=self.height())
+                                            x=self.x, y=self.y, width=width, height=height)
         root.append(container)
 
         # Level2
         L2_x_cursor = self.x + 10
         L2_y_cursor = self.y + 70
 
-        for level2 in self.level2s:
-            level2.x = L2_x_cursor
-            level2.y = L2_y_cursor
-            level2.appender(root)
-            L2_x_cursor += level2.width() + 10
+        if not transpose:
+            for level2 in self.level2s:
+                level2.x = L2_x_cursor
+                level2.y = L2_y_cursor
+                level2.appender(root, transpose=transpose)
+                L2_x_cursor += level2.width() + 10
+        else:
+            for level2 in self.level2s:
+                level2.x = L2_x_cursor
+                level2.y = L2_y_cursor
+                level2.appender(root, transpose=transpose)
+                L2_y_cursor += level2.height() + 10
+
+    def render_partial_views(self, file_name):
+        mxGraphModel = get_diagram_root()
+        root = mxGraphModel.find("root")
+        append_partial_views_diagram_layers(root)
+        self.x = 0
+        self.y = 0
+        self.appender(root, transpose=True)
+        finish(mxGraphModel, file_name + '_' + self.name + '.drawio')
 
 
 def get_diagram_root():
@@ -499,7 +543,7 @@ def get_diagram_root():
     return mxGraphModel
 
 
-def append_L2_diagram_layers(root):
+def append_partial_views_diagram_layers(root):
     layers = {}
     layers['Containers'] = create_layer('Containers')
     layers['Applications'] = create_layer('Applications')
@@ -508,13 +552,15 @@ def append_L2_diagram_layers(root):
     layers['Hosting'] = create_layer('Hosting')
     layers['Metrics'] = create_layer('Metrics')
     layers['TransactionCycle'] = create_layer('TransactionCycle')
+    layers['LinkOverlay'] = create_layer('LinkOverlay')
     for layer in layers.values():
         root.append(layer)
     return root
 
 
-def render_partial_views_at_L2(file_name, level1s):
+def render_partial_views(file_name, level1s):
     for level1 in level1s:
+        level1.render_partial_views(file_name)
         for level2 in level1.level2s:
             level2.render_partial_views(file_name, level1.name)
 
@@ -522,6 +568,7 @@ def render_partial_views_at_L2(file_name, level1s):
 def layer_id(root, name):
     for node in root.findall('.//mxCell[@parent="0"][@value="' + name + '"]'):
         return node.get('id')
+
 
 def __main__(file):
     # global input_file
@@ -560,7 +607,7 @@ def __main__(file):
 
     # back to front order, lowest layer first
     # while building out dict of layers
-    #global layers
+    # global layers
     layers = {}
     layers['Containers'] = create_layer('Containers')
     layers['Applications'] = create_layer('Applications')
@@ -572,7 +619,6 @@ def __main__(file):
     layers['LinkOverlay'] = create_layer('LinkOverlay')
     for layer in layers.values():
         root.append(layer)
-
 
     try:
         df = pd.read_csv(input_file, quoting=csv.QUOTE_ALL, delim_whitespace=False)
@@ -598,9 +644,9 @@ def __main__(file):
 
         # .applications.
         L2.append(Application(app['AppName'], TC=app['TC'], StatusRAG=app['StatusRAG'], Status=app['Status']
-                                           , HostingPercent=app['HostingPercent'], HostingPattern1=app['HostingPattern1'],
-                                           HostingPattern2=app['HostingPattern2'], Arrow1=app['Arrow1'],
-                                           Arrow2=app['Arrow2'],Link=app['Link']))
+                              , HostingPercent=app['HostingPercent'], HostingPattern1=app['HostingPattern1'],
+                              HostingPattern2=app['HostingPattern2'], Arrow1=app['Arrow1'],
+                              Arrow2=app['Arrow2'], Link=app['Link']))
 
     level1s = sorted(level1s, key=lambda x: x.width(), reverse=True)
 
@@ -642,14 +688,11 @@ def __main__(file):
             previous_level_height = 0
     finish(mxGraphModel, input_file + '.drawio')
 
-    render_partial_views_at_L2(input_file, level1s)
+    render_partial_views(input_file, level1s)
 
     drawio_shared_functions.pretty_print(mxGraphModel)
 
     os.system('"C:\Program Files\draw.io\draw.io.exe" ' + input_file + ".drawio")
-
-
-
 
 
 gettrace = getattr(sys, 'gettrace', None)
