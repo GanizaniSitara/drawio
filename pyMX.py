@@ -320,6 +320,9 @@ class Level2:
         self.vertical_elements = 0
         self.horizontal_elements = 0
 
+    def size(self):
+        return len(self.applications)
+
     def append(self, app):
         self.applications.append(app)
         self.vertical_elements, self.horizontal_elements = get_layout_size(len(self.applications))
@@ -404,6 +407,9 @@ class Level1:
     # def number_of_elements(self):
     #     return self.vertical * self.horizontal
 
+    def size(self):
+        return sum([level2.size() for level2 in self.level2s])
+
     def height(self, transpose=False):
         ret_val = 70  # Header
         if not transpose:
@@ -485,6 +491,33 @@ class Level1:
         finish(mxGraphModel, file_name + '_' + self.name + '.drawio')
 
 
+class Level0:
+    def __init__(self, name):
+        self.name = name
+        self.level1s = []
+        self.placed = False
+
+    def width(self):
+        return max(level1.width() for level1 in self.level1s)
+
+    def height(self):
+        return max(level1.height() for level1 in self.level1s)
+
+    def size(self):
+        # print(f"Level0: {self.name} {len(self.level1s)} {size} {self.width()} {self.height()}")
+        return sum([x.size() for x in self.level1s])
+
+    def appender(self, root):
+        print(f"Placing: {self.name} at {self.x},{self.y}")
+        container = create_rectangle(parent=layer_id(root, 'Containers'), value=self.name,
+                                     style=';whiteSpace=wrap;html=1;fontFamily=Expert Sans Regular;fontSize='
+                                           + '24'
+                                           + ';fontColor=#333333;strokeColor=none;fillColor=#D6D6D6;verticalAlign=top;spacing='
+                                           + '10' + ';fontStyle=0',
+                                     x=self.x, y=self.y, width=self.width(), height=self.height())
+        root.append(container)
+
+
 def get_diagram_root():
     mxGraphModel = etree.Element('mxGraphModel')
     mxGraphModel.set('dx', '981')
@@ -545,6 +578,70 @@ def render_partial_views(file_name, level1s):
 def layer_id(root, name):
     for node in root.findall('.//mxCell[@parent="0"][@value="' + name + '"]'):
         return node.get('id')
+
+
+def render_L0(file):
+    try:
+        df = pd.read_csv(file, quoting=csv.QUOTE_ALL, delim_whitespace=False)
+    except Exception as e:
+        print(e)
+        print(f"Issue with file {file}")
+        return
+    level0s = []
+    for index, row in df.iterrows():
+        L0 = next((x for x in level0s if x.name == row['Level0']), None)
+        if L0 is None:
+            L0 = Level0(row['Level0'])
+            level0s.append(L0)
+        L1 = next((x for x in L0.level1s if x.name == row['Level1']), None)
+        if L1 is None:
+            L1 = Level1(row['Level1'])
+            L0.level1s.append(L1)
+        L2 = next((x for x in L1.level2s if x.name == row['Level2']), None)
+        if L2 is None:
+            L2 = Level2(row['Level2'])
+            L1.level2s.append(L2)
+        L2.append(Application(row['AppName']))
+
+    for level0 in level0s:
+        level0.size()
+
+
+    mxGraphModel = get_diagram_root()
+    root = mxGraphModel.find("root")
+    append_layers(root)
+
+    MAX_PAGE_WIDTH = 1600
+
+    L0_x_cursor = 0
+    L0_y_cursor = 0
+
+    for i in range(len(level0s)):
+        if not level0s[i].placed:
+            level0s[i].x = L0_x_cursor
+            level0s[i].y = L0_y_cursor
+            level0s[i].appender(root)
+            level0s[i].placed = True
+            L0_x_cursor += level0s[i].width() + 10
+            previous_level_height = level0s[i].height()
+            for j in range(i + 1, len(level0s)):
+                if not level0s[j].placed:
+                    if L0_x_cursor + level0s[j].width() <= MAX_PAGE_WIDTH:
+                        level0s[j].x = L0_x_cursor
+                        level0s[j].y = L0_y_cursor
+                        level0s[j].appender(root)
+                        level0s[j].placed = True
+                        L0_x_cursor += level0s[j].width() + 10
+                        if level0s[j].height() > previous_level_height:
+                            previous_level_height = level0s[j].height()
+            L0_x_cursor = 0
+            L0_y_cursor += previous_level_height + 10
+
+    finish(mxGraphModel, file[:-4] + '.drawio')
+
+    drawio_shared_functions.pretty_print(mxGraphModel)
+
+    os.system('"C:\Program Files\draw.io\draw.io.exe" ' + file[:-4] + ".drawio")
 
 
 def __main__(file):
@@ -611,9 +708,9 @@ def __main__(file):
             L1_x_cursor = 0
             L1_y_cursor += previous_level_height + 10
 
-    finish(mxGraphModel, file + '.drawio')
+    finish(mxGraphModel, file[:-4] + '.drawio')
 
-    render_partial_views(file, level1s)
+    render_partial_views(file[:-4], level1s)
 
     drawio_shared_functions.pretty_print(mxGraphModel)
 
