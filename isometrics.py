@@ -5,7 +5,8 @@ import drawio_shared_functions
 import os
 import random
 import string
-
+import pandas as pd
+import csv
 
 import data
 
@@ -20,140 +21,176 @@ palette_lighter = [x + 0x080808 for x in palette]
 palette_ligthtest = [x + 0x0f0f0f for x in palette]
 palette_road = [x + 0x142020 for x in palette]
 
+groups = []
+UNIT_SIZE = 40
+OFFSET = 20
+
 
 def webcol(color):
     return f"#{color:x}"
 
 def main():
+    load_csv("data.csv")
+
     # draw_architecture_v1()
-    draw_architecture_v2()
-    # draw_architecture_v3()
+    # draw_architecture_v2()
+    draw_architecture_v3()
+
 
 def draw_architecture_v3():
     mxGraphModel = get_diagram_root()
     root = mxGraphModel.find("root")
     append_layers(root)
 
-    UNIT_SIZE = 40
-
-    prev_cuboid_bottom_left_x = None
-    prev_cuboid_bottom_left_y = None
-
-    OFFSET = 20
-
     x, y = 0, 0
 
-    placement_order = 0
+    # placement_order = 0
 
-    df1_grouped = data.df.groupby(['class'])
-    # keys = groups.groups.keys()
+    group_x_cursor = 0
+    group_y_cursor = 0
 
     class_color_index = 0
-    previous_group_width = 0
 
-    for group_name, df_group in df1_grouped:
-        class_name = group_name
-
-        # Need these here so we can place Front Roads
-        color_top = None  # of the last cuboid in group
-        depth = None  # of the last cuboid in group
-        height = None  # of the last cuboid in group
-
-        road_length_counter = 0
-        block_counter = 0
-
+    for i in range(len(groups)):
         color_top = webcol(palette_ligthtest[class_color_index % len(palette_ligthtest)])
-        print(f"{class_name} {color_top}")
         color_side = webcol(palette_lighter[class_color_index % len(palette_lighter)])
         color_front = webcol(palette[class_color_index % len(palette)])
         color_road = webcol(palette_road[class_color_index % len(palette_road)])
 
-        # work out max height for a group
-        group_max_depth, group_width = 0, 0
-        for index, row in df_group.iterrows():
-            if row['cost'] * UNIT_SIZE > group_max_depth:
-                group_max_depth = row['cost'] * UNIT_SIZE
-            group_width += row['infra'] * UNIT_SIZE + OFFSET
-        print(f"{class_name} max depth {group_max_depth}")
-        group_max_depth += (OFFSET * 3)
-
-        if class_color_index != 0:
-            y += group_max_depth / 2
-        x += previous_group_width / 2
-        previous_group_width = 0
-
-        prev_cuboid_bottom_left_x = None
-        prev_cuboid_bottom_left_y = None
-
-        for row_index, row in df_group.iterrows():
-            system_name = row['name']
-            system_infra_size = row['infra']
-            system_cost = row['cost']
-            system_rescat = row['rescat']
-            system_infra_cost = row['infra_cost']
-            print('{} {} {} {} {}'.format(class_name, system_name, system_infra_size, system_cost, system_rescat))
-
-            width = system_infra_size * UNIT_SIZE
-            height = system_rescat * UNIT_SIZE
-            depth = system_cost * UNIT_SIZE
-            infra_cost = system_infra_cost * UNIT_SIZE
-
-            cuboid = drawio_cuboid_stencil_xml(width, height, depth, f"{system_name} {placement_order}",
-                                               infra_cost=infra_cost,
-                                               color_top=color_top,
-                                               color_side=color_side, color_front=color_front)
-            placement_order += 1
-
-            # first element placement at 0, 0
-            if not prev_cuboid_bottom_left_x:
-                rectangle = create_rectangle(layer_id(root, 'Buildings'), x, y, width=width + depth,
-                                             height=height + depth / 2 + width / 2, value="", style=cuboid)
-                root.append(rectangle)
-
-
-            else:
-                x = prev_cuboid_bottom_left_x - depth - width
-                y = prev_cuboid_bottom_left_y - (height + depth / 2)
-
-                rectangle = create_rectangle(layer_id(root, 'Buildings'), x, y, width=width + depth,
-                                             height=height + depth / 2 + width / 2, value="", style=cuboid)
-                root.append(rectangle)
-
-            road_length_counter += width
-            block_counter += 1
-            prev_cuboid_bottom_left_x = x + depth - OFFSET
-            prev_cuboid_bottom_left_y = y + height + (depth + width) / 2 + OFFSET / 2
-
-        front_road = drawio_road_stencil_xml(road_length_counter + block_counter * OFFSET - OFFSET, 40,
-                                             f"{road_length_counter + block_counter * OFFSET + OFFSET}",
-                                             color_top=color_road)
-        rectangle = create_rectangle(layer_id(root, 'Roads'),
-                                     prev_cuboid_bottom_left_x + 60,  # one unit in front
-                                     prev_cuboid_bottom_left_y - (
-                                                 road_length_counter + block_counter * OFFSET) / 2 + 10,
-                                     width=road_length_counter + block_counter * OFFSET + OFFSET,
-                                     height=(40 + road_length_counter + block_counter * OFFSET + OFFSET) / 2,
-                                     value="",
-                                     style=front_road)
-        root.append(rectangle)
-
-        # front_road = drawio_road_stencil_xml(road_length_counter, 40, "", color_top=color_top)
-        # rectangle = create_rectangle(layer_id(root, 'Roads'),
-        #                              prev_cuboid_bottom_left_x + OFFSET - depth, # one unit in front
-        #                              prev_cuboid_bottom_left_y - road_length_counter / 2 + 10,
-        #                              width=road_length_counter + depth,
-        #                              height= 40 / 2 + road_length_counter / 2, value="", style=front_road)
-        # root.append(rectangle)
+        if not groups[i].placed:
+            groups[i].appender(root,
+                               x = group_x_cursor,
+                               y = group_y_cursor,
+                               color_top = color_top,
+                               color_side = color_side,
+                               color_front = color_front,
+                               color_road = color_road)
+            groups[i].placed = True
+            group_x_cursor += groups[i].bottom_right_object_x
+            group_y_cursor += groups[i].bottom_right_object_y
 
         class_color_index += 1
 
-        for index, row in df_group.iterrows():
-            previous_group_width += row['infra'] * UNIT_SIZE + OFFSET
-
-    # save xml to file
-    # drawio_shared_functions.pretty_print(mxGraphModel)
     drawio_shared_functions.finish(mxGraphModel)
     os.system('"C:\Program Files\draw.io\draw.io.exe" output.drawio')
+
+
+class Group:
+    def __init__(self, name, x=0, y=0):
+        self.name = name
+        self.applications = []
+        self.x = x
+        self.y = y
+        self.placed = False
+        self.spacing = 0
+        self.total_area = sum([application.total_area for application in self.applications])
+        self.total_cost = sum([application.total_cost for application in self.applications])
+        self.total_infra_cost = sum([application.total_infra_cost for application in self.applications])
+
+        self.bottom_right_object_x = 0
+        self.bottom_right_object_y = 0
+
+
+    def appender(self, root, x=0, y=0, **kwargs):
+        self.applications = sorted(self.applications, key=lambda x: x.total_area, reverse=True)
+
+        self.x = x
+        self.y = y
+
+        # these are for movement thgouth the group only
+        prev_cuboid_bottom_left_x = None
+        prev_cuboid_bottom_left_y = None
+
+        road_length_counter = 0
+
+        for i in range(len(self.applications)):
+            if not self.applications[i].placed:
+                if not prev_cuboid_bottom_left_x:
+                    # this is the first block being placed for the group
+
+                    # x, y are coordinate of the bottom right corner of previous group
+                    # this groups back right corner needs to be on the diagonal
+                    # slope is given so we need to calculate placement of back right corner in relation to x, y
+                    # end of frame given by
+                    #
+                    # "back_right_x": width,
+                    # "back_right_y": 0,
+
+                    self.applications[i].appender(root, app_x=x , app_y=y, **kwargs)
+                    self.applications[i].placed = True
+
+                    # also, whichever app goes first will determine the bottom right corner of the group
+                    self.bottom_right_object_x = self.applications[i].bottom_right_x
+                    self.bottom_right_object_y = self.applications[i].bottom_right_y
+
+                else:
+                    self.x = prev_cuboid_bottom_left_x - self.applications[i].depth - self.applications[i].width
+                    self.y = prev_cuboid_bottom_left_y - (self.applications[i].height + self.applications[i].depth / 2)
+                    self.applications[i].appender(root, app_x=self.x, app_y=self.y, **kwargs)
+                    self.applications[i].placed = True
+
+            road_length_counter += self.applications[i].width
+
+            prev_cuboid_bottom_left_x = self.x + self.applications[i].depth - OFFSET
+            prev_cuboid_bottom_left_y = self.y + self.applications[i].height + (self.applications[i].depth + self.applications[i].width) / 2 + OFFSET / 2
+
+
+
+class Application:
+    def __init__(self, name, **kwargs):
+        self.name = name
+        self.x = kwargs.get('x', 0)
+        self.y = kwargs.get('y', 0)
+        self.width = kwargs.get('width', 0) * UNIT_SIZE
+        self.height = kwargs.get('height', 0) * UNIT_SIZE
+        self.depth = kwargs.get('depth', 0) * UNIT_SIZE
+        self.infra_cost = kwargs.get('infra_cost',0) * UNIT_SIZE
+        self.total_area = self.width * self.depth * UNIT_SIZE
+        self.placed = False
+
+        self.bottom_right_x = self.width + self.depth
+        self.bottom_right_y = self.height + self.depth / 2
+
+
+    def appender(self, root, app_x, app_y, **kwargs):
+        cuboid = drawio_cuboid_stencil_xml(self.width, self.height, self.depth, f"{self.name}",
+                                           infra_cost=self.infra_cost,
+                                           color_top=kwargs['color_top'],
+                                           color_side=kwargs['color_side'],
+                                           color_front=kwargs['color_front'])
+
+        rectangle = create_rectangle(layer_id(root, 'Buildings'), app_x, app_y,
+                                     width=self.width + self.depth,
+                                     height=self.height + self.depth / 2 + self.width / 2, value="", style=cuboid)
+        root.append(rectangle)
+
+
+def load_csv(file):
+    global groups
+    try:
+        df = pd.read_csv(file, delim_whitespace=False)
+    except Exception as e:
+        print(e)
+        print(f"Issue reading:{file}")
+        return
+
+    df1_grouped = df.groupby(['class'])
+    for group_name, df_group in df1_grouped:
+        class_name = group_name
+        print(group_name)
+        print('========')
+        groups.append(Group(group_name))
+        for row_index, row in df_group.iterrows():
+            groups[-1].applications.append(Application(row['name'], x=0, y=0,
+                                                       width=row['infra'],
+                                                       depth=row['cost'],
+                                                       height=row['rescat'],
+                                                       infra_cost=row['infra_cost']))
+        print('========')
+
+    print('loaded {} groups'.format(len(groups)))
+
+    # systems_loaded.sort(key=lambda x: x.total_area, reverse=True)
 
 
 def draw_architecture_v2():
