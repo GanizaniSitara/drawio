@@ -49,6 +49,15 @@ def encode_diagram_data(data):
     data = js_btoa(data)
     return data
 
+def encode_stencil(data):
+    # https://stackoverflow.com/questions/33547976/using-python-quote-plus-with-slashes
+    data = quote(data, safe='~()*!.\'')
+    data = data.encode()
+    data = pako_deflate_raw(data)
+    data = js_btoa(data)
+    data = data.decode("utf-8")
+    return data
+
 
 
 
