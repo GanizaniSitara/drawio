@@ -66,8 +66,8 @@ def draw_architecture_v3():
                                color_front = color_front,
                                color_road = color_road)
             groups[i].placed = True
-            group_x_cursor += groups[i].bottom_right_object_x
-            group_y_cursor += groups[i].bottom_right_object_y
+            group_x_cursor = groups[i].bottom_right_x_absolute
+            group_y_cursor = groups[i].bottom_right_y_absolute
 
         class_color_index += 1
 
@@ -87,8 +87,8 @@ class Group:
         self.total_cost = sum([application.total_cost for application in self.applications])
         self.total_infra_cost = sum([application.total_infra_cost for application in self.applications])
 
-        self.bottom_right_object_x = 0
-        self.bottom_right_object_y = 0
+        self.bottom_right_x_absolute = 0
+        self.bottom_right_y_absolute = 0
 
 
     def appender(self, root, x=0, y=0, **kwargs):
@@ -102,39 +102,51 @@ class Group:
         prev_cuboid_bottom_left_y = None
 
         road_length_counter = 0
+        block_counter = 0
+
+        cursor_x = x
+        cursor_y = y
 
         for i in range(len(self.applications)):
             if not self.applications[i].placed:
                 if not prev_cuboid_bottom_left_x:
-                    # this is the first block being placed for the group
+                    cursor_x = self.x - self.applications[i].width
+                    cursor_y = self.y - self.applications[i].height
 
-                    # x, y are coordinate of the bottom right corner of previous group
-                    # this groups back right corner needs to be on the diagonal
-                    # slope is given so we need to calculate placement of back right corner in relation to x, y
-                    # end of frame given by
-                    #
-                    # "back_right_x": width,
-                    # "back_right_y": 0,
-
-                    self.applications[i].appender(root, app_x=x , app_y=y, **kwargs)
+                    self.applications[i].appender(root, app_x=cursor_x , app_y=cursor_y, **kwargs)
                     self.applications[i].placed = True
 
-                    # also, whichever app goes first will determine the bottom right corner of the group
-                    self.bottom_right_object_x = self.applications[i].bottom_right_x
-                    self.bottom_right_object_y = self.applications[i].bottom_right_y
+                    self.bottom_right_x_absolute = cursor_x + self.applications[i].bottom_right_x + 2*OFFSET
+                    self.bottom_right_y_absolute = cursor_y + self.applications[i].bottom_right_y + 2*OFFSET /2
 
                 else:
-                    self.x = prev_cuboid_bottom_left_x - self.applications[i].depth - self.applications[i].width
-                    self.y = prev_cuboid_bottom_left_y - (self.applications[i].height + self.applications[i].depth / 2)
-                    self.applications[i].appender(root, app_x=self.x, app_y=self.y, **kwargs)
+                    cursor_x = prev_cuboid_bottom_left_x - self.applications[i].depth - self.applications[i].width
+                    cursor_y = prev_cuboid_bottom_left_y - (self.applications[i].height + self.applications[i].depth / 2)
+                    self.applications[i].appender(root, app_x=cursor_x, app_y=cursor_y, **kwargs)
                     self.applications[i].placed = True
 
             road_length_counter += self.applications[i].width
 
-            prev_cuboid_bottom_left_x = self.x + self.applications[i].depth - OFFSET
-            prev_cuboid_bottom_left_y = self.y + self.applications[i].height + (self.applications[i].depth + self.applications[i].width) / 2 + OFFSET / 2
+            prev_cuboid_bottom_left_x = cursor_x + self.applications[i].depth - OFFSET
+            prev_cuboid_bottom_left_y = cursor_y + self.applications[i].height + (self.applications[i].depth + self.applications[i].width) / 2 + OFFSET / 2
 
+            block_counter += 1
 
+        front_road = drawio_road_stencil_xml(road_length_counter + block_counter * OFFSET - OFFSET, 40,
+                                             f"{road_length_counter + block_counter * OFFSET + OFFSET}",
+                                             **kwargs)
+        rectangle = create_rectangle(layer_id(root, 'Roads'),
+                                     prev_cuboid_bottom_left_x + 60,  # one unit in front
+                                     prev_cuboid_bottom_left_y - (
+                                                 road_length_counter + block_counter * OFFSET) / 2 + 10,
+                                     width=road_length_counter + block_counter * OFFSET + OFFSET,
+                                     height=(40 + road_length_counter + block_counter * OFFSET + OFFSET) / 2,
+                                     value="",
+                                     style=front_road)
+        root.append(rectangle)
+
+        self.bottom_right_x_absolute += 5 * OFFSET
+        self.bottom_right_y_absolute += 5 * OFFSET / 2
 
 class Application:
     def __init__(self, name, **kwargs):
@@ -287,135 +299,9 @@ def draw_architecture_v2():
                                      style=front_road)
         root.append(rectangle)
 
-        # front_road = drawio_road_stencil_xml(road_length_counter, 40, "", color_top=color_top)
-        # rectangle = create_rectangle(layer_id(root, 'Roads'),
-        #                              prev_cuboid_bottom_left_x + OFFSET - depth, # one unit in front
-        #                              prev_cuboid_bottom_left_y - road_length_counter / 2 + 10,
-        #                              width=road_length_counter + depth,
-        #                              height= 40 / 2 + road_length_counter / 2, value="", style=front_road)
-        # root.append(rectangle)
-
         class_color_index += 1
 
-    # save xml to file
-    # drawio_shared_functions.pretty_print(mxGraphModel)
     drawio_shared_functions.finish(mxGraphModel)
-    os.system('"C:\Program Files\draw.io\draw.io.exe" output.drawio')
-
-# get non-isometric line length from 2 sets of points
-def get_line_length(x1, y1, x2, y2):
-    return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
-
-def analyze_drawio_file(filename):
-    pass
-    # inner = get_drawio_inner_xml("isometric_shape.drawio")
-    # temp = get_drawio_from_file("isometric_shape.drawio")
-    #
-    # stencil = "zVVRToQwED1Nf01tzYZfg3oCL9CUYWmsDCl1F29v2+luZFdwXTRICOS9GV6HoY9hsuwb1QETvGHygQlxy3m4BrzPeJOx6jvQnsjaDFAR3XuHL7A3lc8Cpm3AGR+j8pHx+5ATT1nW6GDr8K2tRoFDuFNR4SxwCL/iLlY50CJFLuqdYEZMPM0oWNN+Uji+V5a4u0LjpIpiucSx+z/RGEtsFitc1orxB1mpmX9cxEUK2mIPk1myDPzE3g7mS+7RaNEFgu5pZSYk51JqPVdB8JSx9uunta7D8f3TVMFM0hJfruWIU3Nf44nVfhD/cz8VxS/tJw9DGA5xbpD2c8JiysUZ7ZQ125Yoj10mwXmjlR1lOvTKG8y5/Gai56mPZyMpsTQRE/EB"
-    # decoded_stencil = drawio_tools.decode_diagram_data(stencil)
-    # dom = xml.dom.minidom.parseString(decoded_stencil)
-    # pretty_xml_as_string = dom.toprettyxml()
-    # print(pretty_xml_as_string)
-
-def tests():
-    pass
-    # TEST VARIOUS CUBOID SIZES
-    # width, height, depth, unit_size = 2, 1, 4, 40
-    # cuboid = drawio_cuboid_stencil_xml(width, height, depth, unit_size)
-    # rectangle = create_rectangle(layer_id(root, 'Buildings'), 0, 0, width=(width + depth) * unit_size,
-    #                              height=(height + (width + depth) / 2) * unit_size, value="", style=cuboid)
-    # root.append(rectangle)
-    #
-    # width, height, depth, unit_size = 1, 1, 1, 40
-    # cuboid = drawio_cuboid_stencil_xml(width, height, depth, unit_size)
-    # rectangle = create_rectangle(layer_id(root, 'Buildings'), 0, 0, width=(width+depth)*unit_size, height=(height+(width+depth)/2)*unit_size, value="", style=cuboid)
-    # root.append(rectangle)
-    #
-    # width, height, depth, unit_size = 4, 2, 1, 40
-    # cuboid = drawio_cuboid_stencil_xml(width, height, depth, unit_size)
-    # rectangle = create_rectangle(layer_id(root, 'Buildings'), 0, 0, width=(width + depth) * unit_size,
-    #                              height=(height + (width + depth) / 2) * unit_size, value="", style=cuboid)
-    # root.append(rectangle)
-
-
-def draw_architecture_v1():
-    # inner = get_drawio_inner_xml("isometric_shape.drawio")
-    # temp = get_drawio_from_file("isometric_shape.drawio")
-    #
-    # stencil = "zVVRToQwED1Nf01tzYZfg3oCL9CUYWmsDCl1F29v2+luZFdwXTRICOS9GV6HoY9hsuwb1QETvGHygQlxy3m4BrzPeJOx6jvQnsjaDFAR3XuHL7A3lc8Cpm3AGR+j8pHx+5ATT1nW6GDr8K2tRoFDuFNR4SxwCL/iLlY50CJFLuqdYEZMPM0oWNN+Uji+V5a4u0LjpIpiucSx+z/RGEtsFitc1orxB1mpmX9cxEUK2mIPk1myDPzE3g7mS+7RaNEFgu5pZSYk51JqPVdB8JSx9uunta7D8f3TVMFM0hJfruWIU3Nf44nVfhD/cz8VxS/tJw9DGA5xbpD2c8JiysUZ7ZQ125Yoj10mwXmjlR1lOvTKG8y5/Gai56mPZyMpsTQRE/EB"
-    # decoded_stencil = drawio_tools.decode_diagram_data(stencil)
-    # dom = xml.dom.minidom.parseString(decoded_stencil)
-    # pretty_xml_as_string = dom.toprettyxml()
-    # print(pretty_xml_as_string)
-
-    mxGraphModel = get_diagram_root()
-    root = mxGraphModel.find("root")
-    append_layers(root)
-
-    UNIT_SIZE = 40
-
-    prev_cuboid_bottom_left_x = None
-    prev_cuboid_bottom_left_y = None
-
-    OFFSET = 20
-
-    x, y = 0, 0
-
-    placement_order = 0
-
-    for i, system in enumerate(data.systems_loaded):
-        print(f"{system.name} {system.infra_size} {system.annualized_cost_in_thousands} \
-                   {system.itsm_resilience_category}")
-
-        width = system.infra_size * UNIT_SIZE
-        height = system.itsm_resilience_category * UNIT_SIZE
-        depth = system.annualized_cost_in_thousands * UNIT_SIZE
-        color_top = webcol(palette_ligthtest[i % len(palette_ligthtest)])
-        color_side = webcol(palette_lighter[i % len(palette_lighter)])
-        color_front = webcol(palette[i % len(palette)])
-
-        cuboid = drawio_cuboid_stencil_xml(width, height, depth, f"Text {placement_order}", color_top=color_top,
-                                           color_side=color_side, color_front=color_front)
-        placement_order += 1
-
-        # first element placement at 0, 0
-        if not prev_cuboid_bottom_left_x:
-            rectangle = create_rectangle(layer_id(root, 'Buildings'), x, y, width=width + depth,
-                                         height=height + depth / 2 + width / 2, value="", style=cuboid)
-            root.append(rectangle)
-
-        else:
-            x = prev_cuboid_bottom_left_x - depth - width
-            y = prev_cuboid_bottom_left_y - (height + depth / 2)
-
-            rectangle = create_rectangle(layer_id(root, 'Buildings'), x, y, width=width + depth,
-                                         height=height + depth / 2 + width / 2, value="", style=cuboid)
-            root.append(rectangle)
-
-        prev_cuboid_bottom_left_x = x + depth - OFFSET
-        prev_cuboid_bottom_left_y = y + height + (depth + width) / 2 + OFFSET / 2
-
-    # TEST VARIOUS CUBOID SIZES
-    # width, height, depth, unit_size = 2, 1, 4, 40
-    # cuboid = drawio_cuboid_stencil_xml(width, height, depth, unit_size)
-    # rectangle = create_rectangle(layer_id(root, 'Buildings'), 0, 0, width=(width + depth) * unit_size,
-    #                              height=(height + (width + depth) / 2) * unit_size, value="", style=cuboid)
-    # root.append(rectangle)
-    #
-    # width, height, depth, unit_size = 1, 1, 1, 40
-    # cuboid = drawio_cuboid_stencil_xml(width, height, depth, unit_size)
-    # rectangle = create_rectangle(layer_id(root, 'Buildings'), 0, 0, width=(width+depth)*unit_size, height=(height+(width+depth)/2)*unit_size, value="", style=cuboid)
-    # root.append(rectangle)
-    #
-    # width, height, depth, unit_size = 4, 2, 1, 40
-    # cuboid = drawio_cuboid_stencil_xml(width, height, depth, unit_size)
-    # rectangle = create_rectangle(layer_id(root, 'Buildings'), 0, 0, width=(width + depth) * unit_size,
-    #                              height=(height + (width + depth) / 2) * unit_size, value="", style=cuboid)
-    # root.append(rectangle)
-
-    drawio_shared_functions.pretty_print(mxGraphModel)
-    drawio_shared_functions.finish(mxGraphModel)
-
     os.system('"C:\Program Files\draw.io\draw.io.exe" output.drawio')
 
 
@@ -677,11 +563,42 @@ def create_layer(name):
 def append_layers(root):
     # back to front order, lowest layer first
     layers = {}
-    layers['Buildings'] = create_layer('Buildings')
     layers['Roads'] = create_layer('Roads')
+    layers['Buildings'] = create_layer('Buildings')
     for layer in layers.values():
         root.append(layer)
     return root
+
+def tests():
+    # TEST VARIOUS CUBOID SIZES
+    # width, height, depth, unit_size = 2, 1, 4, 40
+    # cuboid = drawio_cuboid_stencil_xml(width, height, depth, unit_size)
+    # rectangle = create_rectangle(layer_id(root, 'Buildings'), 0, 0, width=(width + depth) * unit_size,
+    #                              height=(height + (width + depth) / 2) * unit_size, value="", style=cuboid)
+    # root.append(rectangle)
+    #
+    # width, height, depth, unit_size = 1, 1, 1, 40
+    # cuboid = drawio_cuboid_stencil_xml(width, height, depth, unit_size)
+    # rectangle = create_rectangle(layer_id(root, 'Buildings'), 0, 0, width=(width+depth)*unit_size, height=(height+(width+depth)/2)*unit_size, value="", style=cuboid)
+    # root.append(rectangle)
+    #
+    # width, height, depth, unit_size = 4, 2, 1, 40
+    # cuboid = drawio_cuboid_stencil_xml(width, height, depth, unit_size)
+    # rectangle = create_rectangle(layer_id(root, 'Buildings'), 0, 0, width=(width + depth) * unit_size,
+    #                              height=(height + (width + depth) / 2) * unit_size, value="", style=cuboid)
+    # root.append(rectangle)
+    pass
+
+def analyze_drawio_file(filename):
+    pass
+    # inner = get_drawio_inner_xml("isometric_shape.drawio")
+    # temp = get_drawio_from_file("isometric_shape.drawio")
+    #
+    # stencil = "zVVRToQwED1Nf01tzYZfg3oCL9CUYWmsDCl1F29v2+luZFdwXTRICOS9GV6HoY9hsuwb1QETvGHygQlxy3m4BrzPeJOx6jvQnsjaDFAR3XuHL7A3lc8Cpm3AGR+j8pHx+5ATT1nW6GDr8K2tRoFDuFNR4SxwCL/iLlY50CJFLuqdYEZMPM0oWNN+Uji+V5a4u0LjpIpiucSx+z/RGEtsFitc1orxB1mpmX9cxEUK2mIPk1myDPzE3g7mS+7RaNEFgu5pZSYk51JqPVdB8JSx9uunta7D8f3TVMFM0hJfruWIU3Nf44nVfhD/cz8VxS/tJw9DGA5xbpD2c8JiysUZ7ZQ125Yoj10mwXmjlR1lOvTKG8y5/Gai56mPZyMpsTQRE/EB"
+    # decoded_stencil = drawio_tools.decode_diagram_data(stencil)
+    # dom = xml.dom.minidom.parseString(decoded_stencil)
+    # pretty_xml_as_string = dom.toprettyxml()
+    # print(pretty_xml_as_string)
 
 
 if __name__ == "__main__":
