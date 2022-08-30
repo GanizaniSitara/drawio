@@ -90,9 +90,13 @@ class Group:
         self.bottom_right_x_absolute = 0
         self.bottom_right_y_absolute = 0
 
+        self.max_depth = 0
+
 
     def appender(self, root, x=0, y=0, **kwargs):
-        self.applications = sorted(self.applications, key=lambda x: x.total_area, reverse=True)
+        # we had this by total_area, but by depth is better for now
+        # self.applications = sorted(self.applications, key=lambda x: x.total_area, reverse=True)
+        self.applications = sorted(self.applications, key=lambda x: x.depth, reverse=True)
 
         self.x = x
         self.y = y
@@ -106,6 +110,8 @@ class Group:
 
         cursor_x = x
         cursor_y = y
+
+
 
         for i in range(len(self.applications)):
             if not self.applications[i].placed:
@@ -133,7 +139,7 @@ class Group:
             block_counter += 1
 
         front_road = drawio_road_stencil_xml(road_length_counter + block_counter * OFFSET - OFFSET, 40,
-                                             f"{road_length_counter + block_counter * OFFSET + OFFSET}",
+                                             f"{self.name}",
                                              **kwargs)
         rectangle = create_rectangle(layer_id(root, 'Roads'),
                                      prev_cuboid_bottom_left_x + 60,  # one unit in front
