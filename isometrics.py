@@ -31,9 +31,6 @@ def webcol(color):
 
 def main():
     load_csv("data.csv")
-
-    # draw_architecture_v1()
-    # draw_architecture_v2()
     draw_architecture_v3()
 
 
@@ -111,8 +108,6 @@ class Group:
         cursor_x = x
         cursor_y = y
 
-
-
         for i in range(len(self.applications)):
             if not self.applications[i].placed:
                 if not prev_cuboid_bottom_left_x:
@@ -154,6 +149,7 @@ class Group:
         self.bottom_right_x_absolute += 5 * OFFSET
         self.bottom_right_y_absolute += 5 * OFFSET / 2
 
+
 class Application:
     def __init__(self, name, **kwargs):
         self.name = name
@@ -163,16 +159,20 @@ class Application:
         self.height = kwargs.get('height', 0) * UNIT_SIZE
         self.depth = kwargs.get('depth', 0) * UNIT_SIZE
         self.infra_cost = kwargs.get('infra_cost',0) * UNIT_SIZE
+        self.infra_cost_label = kwargs.get('infra_cost_label', 0) * UNIT_SIZE
+        self.infra_virt = kwargs.get('infra_virt', 0) * UNIT_SIZE
+        self.infra_phys = kwargs.get('infra_phys', 0) * UNIT_SIZE
         self.total_area = self.width * self.depth * UNIT_SIZE
         self.placed = False
 
         self.bottom_right_x = self.width + self.depth
         self.bottom_right_y = self.height + self.depth / 2
 
-
     def appender(self, root, app_x, app_y, **kwargs):
         cuboid = drawio_cuboid_stencil_xml(self.width, self.height, self.depth, f"{self.name}",
                                            infra_cost=self.infra_cost,
+                                           infra_phys=self.infra_phys,
+                                           infra_virt=self.infra_virt,
                                            color_top=kwargs['color_top'],
                                            color_side=kwargs['color_side'],
                                            color_front=kwargs['color_front'])
@@ -203,112 +203,14 @@ def load_csv(file):
                                                        width=row['infra'],
                                                        depth=row['cost'],
                                                        height=row['rescat'],
-                                                       infra_cost=row['infra_cost']))
+                                                       infra_cost=row['infra_cost'],
+                                                       infra_phys=row['infra_phys'],
+                                                       infra_virt=row['infra_virt']
+                                                       ))
         print('========')
 
     print('loaded {} groups'.format(len(groups)))
-
     # systems_loaded.sort(key=lambda x: x.total_area, reverse=True)
-
-
-def draw_architecture_v2():
-    mxGraphModel = get_diagram_root()
-    root = mxGraphModel.find("root")
-    append_layers(root)
-
-    UNIT_SIZE = 40
-
-    prev_cuboid_bottom_left_x = None
-    prev_cuboid_bottom_left_y = None
-
-    OFFSET = 20
-
-    x, y = 0, 0
-
-    placement_order = 0
-
-    df1_grouped = data.df.groupby(['class'])
-    #keys = groups.groups.keys()
-
-    class_color_index = 0
-    for group_name, df_group in df1_grouped:
-        class_name = group_name
-
-        # Need these here so we can place Front Roads
-        color_top = None # of the last cuboid in group
-        depth = None # of the last cuboid in group
-        height = None # of the last cuboid in group
-
-        road_length_counter = 0
-        block_counter = 0
-
-        color_top = webcol(palette_ligthtest[class_color_index % len(palette_ligthtest)])
-        print(f"{class_name} {color_top}")
-        color_side = webcol(palette_lighter[class_color_index % len(palette_lighter)])
-        color_front = webcol(palette[class_color_index % len(palette)])
-        color_road = webcol(palette_road[class_color_index % len(palette_road)])
-        print(color_road)
-
-        for row_index, row in df_group.iterrows():
-            system_name = row['name']
-            system_infra_size = row['infra']
-            system_cost = row['cost']
-            system_rescat = row['rescat']
-            system_infra_cost = row['infra_cost']
-            print('{} {} {} {} {}'.format(class_name, system_name, system_infra_size, system_cost, system_rescat))
-
-            width = system_infra_size * UNIT_SIZE
-            height = system_rescat * UNIT_SIZE
-            depth = system_cost * UNIT_SIZE
-            infra_cost = system_infra_cost * UNIT_SIZE
-
-            cuboid = drawio_cuboid_stencil_xml(width, height, depth, f"{system_name} {placement_order}",
-                                               infra_cost=infra_cost,
-                                               color_top=color_top,
-                                               color_side=color_side, color_front=color_front)
-            placement_order += 1
-
-            # first element placement at 0, 0
-            if not prev_cuboid_bottom_left_x:
-                rectangle = create_rectangle(layer_id(root, 'Buildings'), x, y, width=width + depth,
-                                             height=height + depth / 2 + width / 2, value="", style=cuboid)
-                root.append(rectangle)
-
-                # these two guys will help us work out end of Front Road
-                first_cuboid_bottom_right_x = width + depth
-                first_cuboid_bottom_right_y = height + depth/2
-
-
-
-
-            else:
-                x = prev_cuboid_bottom_left_x - depth - width
-                y = prev_cuboid_bottom_left_y - (height + depth / 2)
-
-                rectangle = create_rectangle(layer_id(root, 'Buildings'), x, y, width=width + depth,
-                                             height=height + depth / 2 + width / 2, value="", style=cuboid)
-                root.append(rectangle)
-
-            road_length_counter += width
-            block_counter += 1
-            prev_cuboid_bottom_left_x = x + depth - OFFSET
-            prev_cuboid_bottom_left_y = y + height + (depth + width) / 2 + OFFSET / 2
-
-
-        front_road = drawio_road_stencil_xml(road_length_counter + block_counter*OFFSET - OFFSET, 40, f"{road_length_counter + block_counter*OFFSET + OFFSET}", color_top=color_road)
-        rectangle = create_rectangle(layer_id(root, 'Roads'),
-                                     prev_cuboid_bottom_left_x + 60, # one unit in front
-                                     prev_cuboid_bottom_left_y - (road_length_counter + block_counter*OFFSET)/2 + 10,
-                                     width = road_length_counter + block_counter*OFFSET + OFFSET,
-                                     height = (40 + road_length_counter + block_counter*OFFSET + OFFSET)/2,
-                                     value="",
-                                     style=front_road)
-        root.append(rectangle)
-
-        class_color_index += 1
-
-    drawio_shared_functions.finish(mxGraphModel)
-    os.system('"C:\Program Files\draw.io\draw.io.exe" output.drawio')
 
 
 def drawio_road_stencil_xml(width, depth, text="Text", infra_cost=0, **kwargs):
@@ -367,7 +269,9 @@ def drawio_road_stencil_xml(width, depth, text="Text", infra_cost=0, **kwargs):
     return f"shape=stencil({drawio_tools.encode_stencil(xml)});whiteSpace=wrap;html=1;"
 
 
-def drawio_cuboid_stencil_xml(width, height, depth, text="Text", infra_cost=0, **kwargs):
+def drawio_cuboid_stencil_xml(width, height, depth, text="Text",
+                              infra_cost=0, infra_phys=0, infra_virt=0, **kwargs):
+
 
     data = {
         "back_right_x": width,
@@ -406,20 +310,51 @@ def drawio_cuboid_stencil_xml(width, height, depth, text="Text", infra_cost=0, *
 
         # in the section below 10 creates a quarter unit bar graph, 20 half etc.
         # 5s need to be scaled up accordingly
+
         "cost_back_right_x": depth - infra_cost + 10, # one unit size
         "cost_back_right_y": width/2 + depth/2 - infra_cost/2 - 5, #(width-40)/2, # one unit size
+
+        "infra_phys_back_right_x": depth + infra_phys - 10,  # 0
+        "infra_phys_back_right_y": width / 2 + depth / 2 - infra_phys / 2 - 5,  # width/2
+
         "cost_back_left_x": depth - infra_cost, # 0
         "cost_back_left_y": width/2 + depth/2 - infra_cost/2, # width/2
-        "cost_front_right_x": depth + 10, #one unit size
-        "cost_front_right_y": depth/2 + (width-10)/2, #one unit size
+
+        "infra_phys_front_right_x": depth + infra_phys,
+        "infra_phys_front_right_y": width/2 + depth/2 - infra_phys/2,
+
+        "cost_front_right_x": depth + 10,  # one unit size
+        "cost_front_right_y": depth / 2 + (width - 10) / 2,  # one unit size
+
+        "infra_phys_back_left_x": depth - 10,  # one unit size
+        "infra_phys_back_left_y": width / 2 + (depth - 10) / 2,  # one unit size
+
         "cost_front_left_x": depth,
-        "cost_front_left_y": width/2 + depth/2,
+        "cost_front_left_y": width / 2 + depth / 2,
+
+        "infra_phys_front_left_x": depth,
+        "infra_phys_front_left_y": width / 2 + depth / 2,
+
+
+        "infra_virt_back_left_x": depth + infra_phys - 10,
+        "infra_virt_back_left_y": width / 2 + depth / 2 - infra_phys / 2 - 5,
+
+        "infra_virt_front_left_x": depth + infra_phys,
+        "infra_virt_front_left_y": width/2 + depth/2 - infra_phys/2,
+
+        "infra_virt_front_right_x": depth + infra_phys + infra_virt,
+        "infra_virt_front_right_y": width / 2 + depth / 2 - infra_phys / 2 - infra_virt / 2,
+
+        "infra_virt_back_right_x": depth + infra_phys + infra_virt - 10,  # 0
+        "infra_virt_back_right_y": width / 2 + depth / 2 - infra_phys / 2 - infra_virt/2 - 5,  # width/2
 
     }
 
     # TODO: finish template replacements
 
     # we draw our cuboid in order - lid, front, side
+    # red top line to back right
+    # across to back right
     cuboidTemplate = """
           <shape h="{diagram_height}" w="{diagram_width}" aspect="fixed" strokewidth="inherit">  
           <foreground>    
@@ -462,6 +397,26 @@ def drawio_cuboid_stencil_xml(width, height, depth, text="Text", infra_cost=0, *
             </path>    
             <strokecolor color="#000000"/>
             <fillcolor color="#FF0000"/>            
+            <fillstroke />
+            <path>      
+              <move x="{infra_phys_back_left_x}" y="{infra_phys_back_left_y}" />
+              <line x="{infra_phys_back_right_x}" y="{infra_phys_back_right_y}" />
+              <line x="{infra_phys_front_right_x}" y="{infra_phys_front_right_y}" />
+              <line x="{infra_phys_front_left_x}" y="{infra_phys_front_left_y}" />              
+              <close />
+            </path>    
+            <strokecolor color="#000000"/>
+            <fillcolor color="#800000"/>            
+            <fillstroke />
+            <path>      
+              <move x="{infra_virt_back_left_x}" y="{infra_virt_back_left_y}" />
+              <line x="{infra_virt_back_right_x}" y="{infra_virt_back_right_y}" />
+              <line x="{infra_virt_front_right_x}" y="{infra_virt_front_right_y}" />
+              <line x="{infra_virt_front_left_x}" y="{infra_virt_front_left_y}" />              
+              <close />
+            </path>    
+            <strokecolor color="#000000"/>
+            <fillcolor color="#66cc00"/>            
             <fillstroke />
             
             <text str="{text}" x="{text_x}" y="{text_y}" valign="top" vertical="0" rotation="26.6"/>
@@ -516,7 +471,6 @@ def create_rectangle(parent, x, y, width, height, **kwargs):
         print(e)
         print(kwargs)
         RuntimeError('create_rectangle failed')
-
 
 
 def get_diagram_root():
@@ -575,6 +529,7 @@ def append_layers(root):
         root.append(layer)
     return root
 
+
 def tests():
     # TEST VARIOUS CUBOID SIZES
     # width, height, depth, unit_size = 2, 1, 4, 40
@@ -594,6 +549,7 @@ def tests():
     #                              height=(height + (width + depth) / 2) * unit_size, value="", style=cuboid)
     # root.append(rectangle)
     pass
+
 
 def analyze_drawio_file(filename):
     pass

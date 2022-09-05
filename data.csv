@@ -1,0 +1,27 @@
+division,name,class,infra,infra_virt,infra_phys,cost,rescat,infra_cost,category
+ib,Vulcan,FX Cash Desk Pricing,2,1,1,10,1,6,pricing
+ib,Faunus,FX Cash Desk Pricing,4,3,1,4,1,2,pricing
+ib,Interpid,FX Cash Desk Pricing,1,1,0,12,1,2,pricing
+ib,Alfa,Credit Risk,3,2,1,15,2,10,risk
+ib,Delta,Credit Risk,7,6,1,3,2,1,risk
+ib,Epsilon,Credit Risk,2,2,0,7,2,7,risk
+retail,Gamma,Credit Risk,5,0,5,5,2,2,risk
+wealth,Beta,Credit Risk,5,2,3,6,2,3,risk
+corporate,Zeta,Credit Risk,10,8,2,1,2,0,risk
+wealth,Aster,Trade Database,1,0,1,4,3,2,lifecycle
+ib,Clemantis,Trade Database,2,1,1,4,3,3,lifecycle
+ib,Crocus,Trade Database,3,3,0,8,3,3,lifecycle
+ib,Foxglove,Trade Database,6,6,0,8,3,1,lifecycle
+ib,Peony,Trade Database,1,1,0,10,3,6,lifecycle
+ib,Osprey,Equities Pricing,2,1,1,5,1,5,pricing
+ib,Owl,Equities Pricing,2,1,1,3,1,1,pricing
+corporate,Harrier,Equities Pricing,1,0,1,2,1,1,pricing
+corporate,Hawk,Equities Hedging,5,4,1,2,1,2,lifecycle
+ib,Falcon,Equities Hedging,6,5,1,3,1,1,lifecycle
+ib,Eagle,Equities Hedging,5,4,1,4,1,1,lifecycle
+ib,Kite,Equities Hedging,1,0,1,2,1,2,lifecycle
+ib,Buzzard,Equities Hedging,2,1,1,3,1,2,lifecycle
+ib,Griffon,Equities Hedging,3,2,1,3,1,0,lifecycle
+ib,Kestrel,Equities Hedging,1,1,0,1,1,1,lifecycle
+ib,Merlin,Equities Hedging,20,3,17,7,1,1,lifecycle
+wealth,Vulture,Equities Hedging,1,1,0,2,1,0,lifecycle
