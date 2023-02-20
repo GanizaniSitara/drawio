@@ -27,33 +27,9 @@ confluence = Confluence(
     verify_ssl=False
 )
 
-# Define the REST API endpoint for finding pages with Draw.io diagrams
-url = "/rest/api/content/search"
 
-# Define the query parameters for the search
-params = {
-    "cql": f'type=page and text ~ "drawio" and space in ({",".join(spaces_to_search).upper()})',
-    "expand": "body.storage,version",
-    "limit": 1000,
-    "start": 0
-}
-
-# Retrieve the search results using pagination
-all_pages_with_drawio = []
-while True:
-    response = confluence.get(url, params=params)
-    data = response
-    all_pages_with_drawio.extend(data["results"])
-    if data.get("_links") and data["_links"].get("next"):
-        url = data["_links"]["next"]
-    else:
-        break
-
-    params["start"] = data["start"] + data["size"]
-
-# Loop through the pages that have Draw.io diagrams
-for page in all_pages_with_drawio:
-    # Get the Confluence space, page name, and attachment file name
+def download_drawio_attachments(page):
+    # Get the Confluence space and page name
     space_key = page["space"]["key"]
     page_title = page["title"]
 
@@ -64,6 +40,8 @@ for page in all_pages_with_drawio:
     # Find all instances of the <ac:structured-macro> tag with ac:name="drawio"
     pattern = r'<ac:structured-macro.*ac:name="drawio".*>'
     matches = re.findall(pattern, body_storage)
+
+    # Loop through the matching <ac:structured-macro> tags
     for match in matches:
         # Extract the attachment ID from the macro tag
         attachment_id = re.search(r'name="(.*?)"', match).group(1)
@@ -82,3 +60,32 @@ for page in all_pages_with_drawio:
 
         # Print the Confluence space, page name, and attachment name
         print(f"Space: {space_key}, Page: {page_title}, Attachment: {attachment_name}")
+
+
+# Define the REST API endpoint for finding pages with attachments
+url = "/rest/api/content/search"
+
+# Define the query parameters for the search
+params = {
+    "cql": f'type=page and space in ({",".join(spaces_to_search).upper()}) and attachment is not null',
+    "expand": "body.storage,version,attachments",
+    "limit": 1000,
+    "start": 0
+}
+
+# Retrieve the search results using pagination
+all_pages_with_attachments = []
+while True:
+    response = confluence.get(url, params=params)
+    data = response
+    all_pages_with_attachments.extend(data["results"])
+    if data.get("_links") and data["_links"].get("next"):
+        url = data["_links"]["next"]
+    else:
+        break
+
+    params["start"] = data["start"] + data["size"]
+
+# Loop through the pages that have attachments
+for page in all_pages_with_attachments:
+    download_drawio_attachments(page)
