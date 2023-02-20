@@ -30,13 +30,12 @@ confluence = Confluence(
 
 def download_drawio_attachments(page):
     # Get the Confluence space and page name
-    if "space" in page:
-        space_key = page["space"]["key"]
-    else:
-        # If the page does not have a space property, use the space property of the parent page
-        parent_page_id = page["ancestors"][-1]["id"]
-        parent_page = confluence.get(f"/rest/api/content/{parent_page_id}")
-        space_key = parent_page["space"]["key"]
+    space_key = page.get("space", {}).get("key")
+    if not space_key:
+        # If the page does not have a space property, extract the space key from the container link
+        container_link = page["_expandable"]["container"]
+        space_key = container_link.split("/")[-1]
+
     page_title = page["title"]
 
     # Get the body storage and version information for the page
