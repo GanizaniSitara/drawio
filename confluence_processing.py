@@ -1,3 +1,4 @@
+import configparser
 import os
 import re
 import requests
@@ -64,10 +65,8 @@ def get_all_spaces(confluence):
 
 
 def main():
-    # Load configuration from a file
-    config_file = "confluence.config"
-    with open(config_file, "r") as f:
-        config = eval(f.read())
+    config = configparser.ConfigParser()
+    config.read("confluence.config")
 
     confluence_url = config["confluence_url"]
     confluence_username = config["confluence_username"]
