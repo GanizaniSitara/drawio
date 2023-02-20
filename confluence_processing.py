@@ -1,99 +1,67 @@
 import os
-import urllib
-import json
 import re
+import requests
+
 from atlassian import Confluence
-import configparser
-import urllib3
 
-# Disable SSL certificate verification and suppress warnings
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-# Read the configuration values from confluence.config
-config = configparser.ConfigParser()
-config.read("confluence.config")
-
-confluence_url = config.get("Confluence", "url")
-confluence_username = config.get("Confluence", "username")
-confluence_password = config.get("Confluence", "password")
-spaces_to_search = config.get("Search", "spaces").split(",")
-local_dir = config.get("Local", "directory")
-
-# Set up the Confluence instance with SSL certificate validation disabled
-confluence = Confluence(
-    url=confluence_url,
-    username=confluence_username,
-    password=confluence_password,
-    verify_ssl=False
-)
-
-import requests
-
-import requests
-
-import requests
-
-import requests
+from download_drawio_attachments import download_drawio_attachments
+from get_all_spaces import get_all_spaces
 
 
-def download_drawio_attachments(page, attachments):
-    # Get the Confluence space and page name
-    space_key = page.get("space", {}).get("key")
-    if not space_key:
-        # If the page does not have a space property, extract the space key from the container link
-        container_link = page["_expandable"]["container"]
-        space_key = container_link.split("/")[-1]
+# Load configuration from external file
+with open("confluence.config", "r") as f:
+    config = eval(f.read())
 
-    page_title = page["title"]
-
-    # Get the body storage and version information for the page
-    body_storage = page["body"]["storage"]["value"]
-    version = page["version"]["number"]
-
-    # Loop through the attachments and download Draw.io files
-    for attachment in attachments:
-        attachment_name = attachment["title"]
-        media_type = attachment["metadata"]["mediaType"]
-
-        # Check if the attachment is a Draw.io file by searching for the <ac:structured-macro> pattern and checking the media type
-        pattern = r'<ac:structured-macro.*ac:name="drawio".*>'
-        if re.search(pattern, body_storage) and media_type == "application/vnd.jgraph.mxfile":
-            attachment_id = attachment["id"]
-            download_link = attachment["_links"]["download"]
-
-            # Download the Draw.io attachment file to the local directory
-            attachment_url = f"{confluence_url}{download_link}"
-            local_path = os.path.join(local_dir, f"{attachment_name}.drawio")
-            with requests.get(attachment_url, auth=(confluence_username, confluence_password), stream=True,
-                              verify=False) as response:
-                response.raise_for_status()
-                with open(local_path, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=1024):
-                        f.write(chunk)
-
-            # Print the Confluence space, page name, and attachment name
-            print(f"Space: {space_key}, Page: {page_title}, Attachment: {attachment_name}")
+confluence_url = config["confluence_url"]
+confluence_username = config["confluence_username"]
+confluence_password = config["confluence_password"]
+local_dir = config["local_dir"]
+spaces_to_search = config["spaces_to_search"]
 
 
-# Retrieve all pages in the specified spaces
-all_pages = []
-for space in spaces_to_search:
-    response = confluence.get(
-        f"/rest/api/content?spaceKey={space}&limit=1000&expand=body.storage,version,attachments,ancestors.space")
-    all_pages.extend(response["results"])
-    while "next" in response["_links"]:
-        response = confluence.get(response["_links"]["next"])
-        all_pages.extend(response["results"])
+def main():
+    # Create a Confluence object to interact with the API
+    confluence = Confluence(
+        url=confluence_url, username=confluence_username, password=confluence_password, verify_ssl=False
+    )
 
-# Loop through the pages and check them for attachments
-# Loop through the pages and check them for attachments
-for page in all_pages:
-    # Get the page attachments
-    response = confluence.get(f"/rest/api/content/{page['id']}/child/attachment")
-    attachments = response["results"]
+    # Get a list of all spaces
+    spaces = get_all_spaces(confluence)
 
-    # Download Draw.io files for the page
-    download_drawio_attachments(page, attachments)
+    # Filter the spaces we want to search
+    filtered_spaces = [space for space in spaces if space["key"] in spaces_to_search]
+
+    for space in filtered_spaces:
+        # Get all the pages in the space
+        all_pages = confluence.get_all_pages_from_space(space["key"])
+
+        for page in all_pages:
+            # Get all the attachments for the page
+            attachments = confluence.get_attachments_from_content_id(page["id"])
+
+            for attachment in attachments:
+                if attachment["metadata"]["mediaType"] == "application/vnd.jgraph.mxfile":
+                    # Download the draw.io attachment
+                    attachment_url = attachment["_links"]["download"]
+                    response = confluence.get(attachment_url, not_json_response=True, stream=True)
+
+                    # Get the name of the draw.io diagram
+                    page_body = page["body"]["storage"]["value"]
+                    start_tag = '<ac:structured-macro.*ac:name="drawio".*>'
+                    end_tag = "</ac:structured-macro>"
+                    matches = re.findall(f"{start_tag}.*?{end_tag}", page_body, re.DOTALL)
+
+                    for match in matches:
+                        drawio_name_match = re.search('<ac:parameter ac:name="diagramName">(.*?)</ac:parameter>', match)
+                        if drawio_name_match:
+                            drawio_name = drawio_name_match.group(1)
+                            filename = f"{drawio_name}.drawio"
+
+                            # Save the draw.io attachment to the local directory
+                            with open(os.path.join(local_dir, filename), "wb") as f:
+                                for chunk in response.iter_content(chunk_size=1024):
+                                    f.write(chunk)
 
 
-
+if __name__ == "__main__":
+    main()
