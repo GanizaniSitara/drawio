@@ -79,9 +79,13 @@ for space in spaces_to_search:
 
 # Loop through the pages and check them for attachments
 for page in all_pages:
-    if "attachments" in page:
-        for attachment in page["attachments"]:
-            if attachment["contentType"] == "application/vnd.jgraph.mxfile":
-                download_drawio_attachments(page)
-                break
+    # Get the page attachments
+    response = confluence.get(f"/rest/api/content/{page['id']}/child/attachment")
+    attachments = response["results"]
+
+    # Loop through the attachments and download Draw.io files
+    for attachment in attachments:
+        if attachment["contentType"] == "application/vnd.jgraph.mxfile":
+            download_drawio_attachments(page)
+            break
 
