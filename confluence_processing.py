@@ -85,7 +85,8 @@ for page in all_pages:
 
     # Loop through the attachments and download Draw.io files
     for attachment in attachments:
-        if attachment["contentType"] == "application/vnd.jgraph.mxfile":
+        if attachment["metadata"]["mediaType"] == "application/vnd.jgraph.mxfile":
             download_drawio_attachments(page)
             break
+
 
