@@ -1,7 +1,7 @@
 import os
 import urllib
-from atlassian import Confluence
 import json
+from atlassian import Confluence
 import configparser
 import urllib3
 
@@ -41,7 +41,7 @@ params = {
 all_pages_with_drawio = []
 while True:
     response = confluence.get(url, params=params)
-    data = json.loads(response)
+    data = response
     all_pages_with_drawio.extend(data["results"])
     if data.get("_links") and data["_links"].get("next"):
         url = data["_links"]["next"]
