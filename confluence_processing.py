@@ -52,9 +52,12 @@ def download_drawio_attachments(page, attachments):
             attachment_id = attachment["id"]
 
             # Download the Draw.io attachment file to the local directory
-            attachment_url = f"{confluence_url}/download/attachments/{page['id']}/{attachment_id}?version={version}"
+            attachment_url = f"/download/attachments/{page['id']}/{attachment_id}?version={version}"
             local_path = os.path.join(local_dir, attachment_name)
-            urllib.request.urlretrieve(attachment_url, local_path)
+            with open(local_path, "wb") as f:
+                response = confluence.get(attachment_url, stream=True)
+                for chunk in response.iter_content(chunk_size=1024):
+                    f.write(chunk)
 
             # Print the Confluence space, page name, and attachment name
             print(f"Space: {space_key}, Page: {page_title}, Attachment: {attachment_name}")
