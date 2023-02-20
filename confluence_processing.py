@@ -3,6 +3,7 @@ import urllib
 from atlassian import Confluence
 import json
 import configparser
+import ssl
 
 # Read the configuration values from confluence.config
 config = configparser.ConfigParser()
@@ -14,12 +15,18 @@ confluence_password = config.get("Confluence", "password")
 spaces_to_search = config.get("Search", "spaces").split(",")
 local_dir = config.get("Local", "directory")
 
-# Set up the Confluence instance
+# Set up the Confluence instance with SSL certificate validation disabled
 confluence = Confluence(
     url=confluence_url,
     username=confluence_username,
     password=confluence_password
 )
+
+# Disable SSL certificate verification for urllib
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
+urllib.request.urlopen = urllib.request.URLopener().open
 
 # Define the REST API endpoint for finding pages with Draw.io diagrams
 url = "/rest/api/content/search"
