@@ -2,18 +2,23 @@ import os
 import urllib
 from atlassian import Confluence
 import json
+import configparser
 
-# Set the local directory for saving attachment files
-LOCAL_DIR = "<local-directory>"
+# Read the configuration values from confluence.config
+config = configparser.ConfigParser()
+config.read("confluence.config")
 
-# Set the Confluence spaces to search for pages with Draw.io diagrams
-SPACES_TO_SEARCH = ["SPACE1", "SPACE2", "SPACE3"]
+confluence_url = config.get("Confluence", "url")
+confluence_username = config.get("Confluence", "username")
+confluence_password = config.get("Confluence", "password")
+spaces_to_search = config.get("Search", "spaces").split(",")
+local_dir = config.get("Local", "directory")
 
 # Set up the Confluence instance
 confluence = Confluence(
-    url='https://<your-confluence-site>.atlassian.net',
-    username='<your-username>',
-    password='<your-api-token>'
+    url=confluence_url,
+    username=confluence_username,
+    password=confluence_password
 )
 
 # Define the REST API endpoint for finding pages with Draw.io diagrams
@@ -21,7 +26,7 @@ url = "/rest/api/content/search"
 
 # Define the query parameters for the search
 params = {
-    "cql": f'type=page and text ~ "drawio" and space in ({",".join(SPACES_TO_SEARCH).upper()})',
+    "cql": f'type=page and text ~ "drawio" and space in ({",".join(spaces_to_search).upper()})',
     "expand": "body.storage,version",
     "limit": 1000,
     "start": 0
@@ -60,8 +65,8 @@ for page in all_pages_with_drawio:
     attachment_id = drawio_macro.split("name=|")[1].split("|")[0]
 
     # Download the Draw.io attachment file to the local directory
-    attachment_url = f"{confluence.url}/download/attachments/{page['id']}/{attachment_id}?version={version}"
-    local_path = os.path.join(LOCAL_DIR, attachment_filename)
+    attachment_url = f"{confluence_url}/download/attachments/{page['id']}/{attachment_id}?version={version}"
+    local_path = os.path.join(local_dir, attachment_filename)
     urllib.request.urlretrieve(attachment_url, local_path)
 
     # Print the Confluence space, page name, and attachment file name
