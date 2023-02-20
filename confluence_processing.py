@@ -56,22 +56,29 @@ for page in all_pages_with_drawio:
     # Get the Confluence space, page name, and attachment file name
     space_key = page["space"]["key"]
     page_title = page["title"]
-    attachment_filename = f"{page_title}.drawio"
 
     # Get the body storage and version information for the page
     body_storage = page["body"]["storage"]["value"]
     version = page["version"]["number"]
 
     # Find all instances of the <ac:structured-macro> tag with ac:name="drawio"
-    pattern = r'<ac:structured-macro\s.*?ac:name="drawio".*?name=.*?([0-9]+).*?/>'
+    pattern = r'<ac:structured-macro.*ac:name="drawio".*>'
     matches = re.findall(pattern, body_storage)
     for match in matches:
-        attachment_id = match
+        # Extract the attachment ID from the macro tag
+        attachment_id = re.search(r'name="(.*?)"', match).group(1)
+
+        # Extract the name of the attachment from the parameters in the macro tag
+        attachment_name_match = re.search(r'<ac:parameter ac:name="diagramName">(.*?)</ac:parameter>', match)
+        if attachment_name_match:
+            attachment_name = attachment_name_match.group(1) + ".drawio"
+        else:
+            attachment_name = f"{page_title}.drawio"
 
         # Download the Draw.io attachment file to the local directory
         attachment_url = f"{confluence_url}/download/attachments/{page['id']}/{attachment_id}?version={version}"
-        local_path = os.path.join(local_dir, attachment_filename)
+        local_path = os.path.join(local_dir, attachment_name)
         urllib.request.urlretrieve(attachment_url, local_path)
 
-        # Print the Confluence space, page name, and attachment file name
-        print(f"Space: {space_key}, Page: {page_title}, Attachment: {attachment_filename}")
+        # Print the Confluence space, page name, and attachment name
+        print(f"Space: {space_key}, Page: {page_title}, Attachment: {attachment_name}")
