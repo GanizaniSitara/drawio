@@ -30,7 +30,13 @@ confluence = Confluence(
 
 def download_drawio_attachments(page):
     # Get the Confluence space and page name
-    space_key = page["space"]["key"]
+    if "space" in page:
+        space_key = page["space"]["key"]
+    else:
+        # If the page does not have a space property, use the space property of the parent page
+        parent_page_id = page["ancestors"][-1]["id"]
+        parent_page = confluence.get(f"/rest/api/content/{parent_page_id}")
+        space_key = parent_page["space"]["key"]
     page_title = page["title"]
 
     # Get the body storage and version information for the page
@@ -65,7 +71,8 @@ def download_drawio_attachments(page):
 # Retrieve all pages in the specified spaces
 all_pages = []
 for space in spaces_to_search:
-    response = confluence.get(f"/rest/api/content?spaceKey={space}&limit=1000&expand=body.storage,version,attachments")
+    response = confluence.get(
+        f"/rest/api/content?spaceKey={space}&limit=1000&expand=body.storage,version,attachments,ancestors.space")
     all_pages.extend(response["results"])
     while "next" in response["_links"]:
         response = confluence.get(response["_links"]["next"])
@@ -78,3 +85,4 @@ for page in all_pages:
             if attachment["contentType"] == "application/vnd.jgraph.mxfile":
                 download_drawio_attachments(page)
                 break
+
