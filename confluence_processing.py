@@ -1,6 +1,7 @@
 import os
 import urllib
 import json
+import re
 from atlassian import Confluence
 import configparser
 import urllib3
@@ -61,18 +62,16 @@ for page in all_pages_with_drawio:
     body_storage = page["body"]["storage"]["value"]
     version = page["version"]["number"]
 
-    # Find the Draw.io attachment ID in the body storage
-    start_tag = '<ac:structured-macro ac:name="drawio">'
-    end_tag = '</ac:structured-macro>'
-    start_index = body_storage.find(start_tag)
-    end_index = body_storage.find(end_tag, start_index)
-    drawio_macro = body_storage[start_index:end_index]
-    attachment_id = drawio_macro.split("name=|")[1].split("|")[0]
+    # Find all instances of the <ac:structured-macro> tag with ac:name="drawio"
+    pattern = r'<ac:structured-macro\s.*?ac:name="drawio".*?name=.*?([0-9]+).*?/>'
+    matches = re.findall(pattern, body_storage)
+    for match in matches:
+        attachment_id = match
 
-    # Download the Draw.io attachment file to the local directory
-    attachment_url = f"{confluence_url}/download/attachments/{page['id']}/{attachment_id}?version={version}"
-    local_path = os.path.join(local_dir, attachment_filename)
-    urllib.request.urlretrieve(attachment_url, local_path)
+        # Download the Draw.io attachment file to the local directory
+        attachment_url = f"{confluence_url}/download/attachments/{page['id']}/{attachment_id}?version={version}"
+        local_path = os.path.join(local_dir, attachment_filename)
+        urllib.request.urlretrieve(attachment_url, local_path)
 
-    # Print the Confluence space, page name, and attachment file name
-    print(f"Space: {space_key}, Page: {page_title}, Attachment: {attachment_filename}")
+        # Print the Confluence space, page name, and attachment file name
+        print(f"Space: {space_key}, Page: {page_title}, Attachment: {attachment_filename}")
