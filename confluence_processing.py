@@ -3,7 +3,10 @@ import urllib
 from atlassian import Confluence
 import json
 import configparser
-import ssl
+import urllib3
+
+# Disable SSL certificate verification and suppress warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Read the configuration values from confluence.config
 config = configparser.ConfigParser()
@@ -19,14 +22,9 @@ local_dir = config.get("Local", "directory")
 confluence = Confluence(
     url=confluence_url,
     username=confluence_username,
-    password=confluence_password
+    password=confluence_password,
+    verify_ssl=False
 )
-
-# Disable SSL certificate verification for urllib
-ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
-urllib.request.urlopen = urllib.request.URLopener().open
 
 # Define the REST API endpoint for finding pages with Draw.io diagrams
 url = "/rest/api/content/search"
