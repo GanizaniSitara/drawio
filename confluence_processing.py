@@ -62,30 +62,19 @@ def download_drawio_attachments(page):
         print(f"Space: {space_key}, Page: {page_title}, Attachment: {attachment_name}")
 
 
-# Define the REST API endpoint for finding pages with attachments
-url = "/rest/api/content/search"
+# Retrieve all pages in the specified spaces
+all_pages = []
+for space in spaces_to_search:
+    response = confluence.get(f"/rest/api/content?spaceKey={space}&limit=1000&expand=body.storage,version,attachments")
+    all_pages.extend(response["results"])
+    while "next" in response["_links"]:
+        response = confluence.get(response["_links"]["next"])
+        all_pages.extend(response["results"])
 
-# Define the query parameters for the search
-params = {
-    "cql": f'type=page and space in ({",".join(spaces_to_search).upper()}) and attachment is not null',
-    "expand": "body.storage,version,attachments",
-    "limit": 1000,
-    "start": 0
-}
-
-# Retrieve the search results using pagination
-all_pages_with_attachments = []
-while True:
-    response = confluence.get(url, params=params)
-    data = response
-    all_pages_with_attachments.extend(data["results"])
-    if data.get("_links") and data["_links"].get("next"):
-        url = data["_links"]["next"]
-    else:
-        break
-
-    params["start"] = data["start"] + data["size"]
-
-# Loop through the pages that have attachments
-for page in all_pages_with_attachments:
-    download_drawio_attachments(page)
+# Loop through the pages and check them for attachments
+for page in all_pages:
+    if "attachments" in page:
+        for attachment in page["attachments"]:
+            if attachment["contentType"] == "application/vnd.jgraph.mxfile":
+                download_drawio_attachments(page)
+                break
