@@ -33,6 +33,8 @@ import requests
 
 import requests
 
+import requests
+
 
 def download_drawio_attachments(page, attachments):
     # Get the Confluence space and page name
@@ -51,16 +53,17 @@ def download_drawio_attachments(page, attachments):
     # Loop through the attachments and download Draw.io files
     for attachment in attachments:
         attachment_name = attachment["title"]
+        media_type = attachment["metadata"]["mediaType"]
 
-        # Check if the attachment is a Draw.io file by searching for the <ac:structured-macro> pattern
+        # Check if the attachment is a Draw.io file by searching for the <ac:structured-macro> pattern and checking the media type
         pattern = r'<ac:structured-macro.*ac:name="drawio".*>'
-        if re.search(pattern, body_storage):
+        if re.search(pattern, body_storage) and media_type == "application/vnd.jgraph.mxfile":
             attachment_id = attachment["id"]
             download_link = attachment["_links"]["download"]
 
             # Download the Draw.io attachment file to the local directory
             attachment_url = f"{confluence_url}{download_link}"
-            local_path = os.path.join(local_dir, attachment_name)
+            local_path = os.path.join(local_dir, f"{attachment_name}.drawio")
             with requests.get(attachment_url, auth=(confluence_username, confluence_password), stream=True,
                               verify=False) as response:
                 response.raise_for_status()
