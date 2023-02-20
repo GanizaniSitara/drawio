@@ -29,6 +29,8 @@ confluence = Confluence(
 
 import requests
 
+import requests
+
 
 def download_drawio_attachments(page, attachments):
     # Get the Confluence space and page name
@@ -52,9 +54,10 @@ def download_drawio_attachments(page, attachments):
         pattern = r'<ac:structured-macro.*ac:name="drawio".*>'
         if re.search(pattern, body_storage):
             attachment_id = attachment["id"]
+            download_link = attachment["_links"]["download"]
 
             # Download the Draw.io attachment file to the local directory
-            attachment_url = f"{confluence_url}/download/attachments/{page['id']}/{attachment_id}?version={version}"
+            attachment_url = f"{confluence_url}{download_link}?version={version}"
             local_path = os.path.join(local_dir, attachment_name)
             with requests.get(attachment_url, auth=(confluence_username, confluence_password), stream=True,
                               verify=False) as response:
