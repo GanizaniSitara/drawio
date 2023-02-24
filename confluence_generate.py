@@ -81,18 +81,29 @@ for item in data_sorted:
     item['attachment_id'] = attachment_id
 
 # Generate HTML table
-table_html = '<table><tr>'
-
+table_html = '<table>'
 for i, item in enumerate(data_sorted):
     # Add a new row after every second item
-    if i > 0 and i % 2 == 0:
-        table_html += '</tr><tr>'
+    if i % 2 == 0:
+        table_html += '<tr>'
 
     # Add cell for current item
-    table_html += f'<td style="text-align: center;"><p>{item["date"]}</p><p>{item["author"]}</p><ac:image ac:thumbnail="true"><ri:attachment ri:filename="{os.path.basename(item["path"])}" ri:version-at-save="1" ri:content-type="image/png" /><ac:plain-text-body><![CDATA[]]></ac:plain-text-body></ac:image></td>'
+    table_html += f'<td style="text-align: center;">'
+    table_html += f'<p>{item["date"]}</p>'
+    table_html += f'<p>{item["author"]}</p>'
+    table_html += f'<ac:image><ri:attachment ri:filename="{os.path.basename(item["path"])}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image>'
+    table_html += '</td>'
 
-# Close table tag
-table_html += '</tr></table>'
+    # Close row after every second item
+    if i % 2 == 1:
+        table_html += '</tr>'
+
+# If there is an odd number of items, add an empty cell to the last row
+if len(data_sorted) % 2 == 1:
+    table_html += '<td></td></tr>'
+
+table_html += '</table>'
+
 
 
 
