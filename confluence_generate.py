@@ -42,7 +42,7 @@ for subdir, _, files in os.walk(local_dir_metadata):
             data.append({'name': name, 'path': image_path, 'author': author, 'date': date})
 
 # Sort data by edit date
-data_sorted = sorted(data, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%dT%H:%M%S.%f%z'), reverse=True)
+data_sorted = sorted(data, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%dT%H:%M:%S.%f%z'), reverse=True)
 
 
 page_title = 'Overview'
