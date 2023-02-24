@@ -71,17 +71,10 @@ else:
 
 # Upload images and attach them to page
 for item in data_sorted:
-    image_path = item['path']
-
-    with open(image_path, 'rb') as f:
-        image_data = f.read()
-
     attachment_id = confluence.attach_file(
-        confluence = confluence_url,
-        file_location = os.path.basename(image_path),
-        file_name = name,
-        file=image_data,
-        content_type='image/png',
+        filename=item["path"],
+        name=item["name"],
+       content_type='image/png',
         page_id=page_id)
 
     item['attachment_id'] = attachment_id
