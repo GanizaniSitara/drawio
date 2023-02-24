@@ -54,10 +54,9 @@ confluence = Confluence(
 
 
 page_title = 'Overview'
-space_key = publish_space
 
 # Check if page already exists
-existing_page_id = confluence.get_page_id(space_key, title=page_title)
+existing_page_id = confluence.get_page_id(space=publish_space, title=page_title)
 
 # If page exists, update it; otherwise, create a new page
 if existing_page_id:
