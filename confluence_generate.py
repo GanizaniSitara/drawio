@@ -1,3 +1,4 @@
+import configparser
 import os
 import json
 import shutil
@@ -5,12 +6,26 @@ import datetime
 from atlassian import Confluence
 import base64
 
-metadata_dir = 'metadata'
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-data = []
+config = configparser.ConfigParser()
+config.read("confluence.config")
+
+config = configparser.ConfigParser()
+config.read("confluence.config")
+
+confluence_url = config.get("Confluence","url")
+confluence_username = config.get("Confluence", "username")
+confluence_password = config.get("Confluence", "password")
+local_dir = config.get("Local","directory")
+local_dir_diagrams = config.get("Local","diagrams")
+local_dir_images = config.get("Local","images")
+local_dir_metadata = config.get("Local","metadata")
+spaces_to_search = config.get("Search","spaces").split(",")
 
 # Iterate over all subfolders of metadata directory
-for subdir, _, files in os.walk(metadata_dir):
+for subdir, _, files in os.walk(local_dir_metadata):
     for file in files:
         if file.endswith('.json'):
             # Read JSON file and extract data
@@ -91,4 +106,4 @@ confluence.update_page(
     page_id=page_id,
     title=page_title,
     body=table_html)
-        
+
