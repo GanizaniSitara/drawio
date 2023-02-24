@@ -36,12 +36,13 @@ for subdir, _, files in os.walk(local_dir_metadata):
                 name = json_data['title']
                 date = json_data['version']['when']
                 author = escape(json_data['version']['by']['displayName'])
+                link = json_data['_links']['base'] + json_data['_links']['webui']
 
             # Concatenate images to parent of metadata directory
             image_path = os.path.join(local_dir_images,json_data["space"]["key"], f'{name}.png')
 
             # Add data to list
-            data.append({'name': name, 'path': image_path, 'author': author, 'date': date})
+            data.append({'name': name, 'path': image_path, 'author': author, 'date': date, 'link': link})
 
 # Sort data by edit date
 data_sorted = sorted(data, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%dT%H:%M:%S.%f%z'), reverse=True)
@@ -89,10 +90,16 @@ for i, item in enumerate(data_sorted):
         table_html += '<tr>'
 
     # Add cell for current item
+    # table_html += f'<td style="text-align: center;">'
+    # table_html += f'<p>{datetime.strptime(item["date"],"%Y-%m-%dT%H:%M:%S.%f%z").date()}</p>'
+    # table_html += f'<p>{item["author"]}</p>'
+    # table_html += f'<ac:image ac:width="700"><ri:attachment ri:filename="{item["name"]}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image>'
+    # table_html += '</td>'
+
+    # Add cell for current item
     table_html += f'<td style="text-align: center;">'
-    table_html += f'<p>{datetime.strptime(item["date"],"%Y-%m-%dT%H:%M:%S.%f%z").date()}</p>'
-    table_html += f'<p>{item["author"]}</p>'
-    table_html += f'<ac:image ac:width="700"><ri:attachment ri:filename="{item["name"]}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image>'
+    table_html += f'<p><strong>{datetime.datetime.strptime(item["edit date"], "%Y-%m-%d").date()}</strong><br>{item["author"]}</p>'
+    table_html += f'<a href="{item["link"]}"><ac:image ac:width="700"><ri:attachment ri:filename="{item["name"]}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image></a>'
     table_html += '</td>'
 
     # Close row after every second item
