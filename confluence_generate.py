@@ -36,7 +36,7 @@ for subdir, _, files in os.walk(local_dir_metadata):
                 name = json_data['title']
                 date = json_data['version']['when']
                 author = escape(json_data['version']['by']['displayName'])
-                link = json_data['_links']['base'] + json_data['_links']['webui']
+                link = escape(json_data['_links']['base'] + json_data['_links']['webui'])
 
             # Concatenate images to parent of metadata directory
             image_path = os.path.join(local_dir_images,json_data["space"]["key"], f'{name}.png')
