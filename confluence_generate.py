@@ -5,7 +5,6 @@ import shutil
 from datetime import datetime
 from atlassian import Confluence
 import base64
-from html import escape
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -62,6 +61,7 @@ existing_page_id = confluence.get_page_id(space=publish_space, title=page_title)
 # If page exists, update it; otherwise, create a new page
 if existing_page_id:
     page_id = existing_page_id
+    page_version = confluence.get_page_by_id(page_id, expand='version')['version']['number']
 else:
     page = confluence.create_page(
         space=publish_space,
@@ -100,5 +100,8 @@ table_html += '</tr></table>'
 confluence.update_page(
     page_id=page_id,
     title=page_title,
-    body=escape(table_html))
+    body=table_html,
+    version={'number':page_version + 1},
+    minor_edit=True,
+    space=publish_space)
 
