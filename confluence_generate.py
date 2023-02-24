@@ -25,6 +25,14 @@ publish_space = config.get("Confluence","publish_space")
 
 data = []
 
+# Create Confluence page
+confluence = Confluence(
+    url=confluence_url,
+    username=confluence_username,
+    password=confluence_password,
+    verify_ssl=False)
+
+
 # Iterate over all subfolders of metadata directory
 for subdir, _, files in os.walk(local_dir_metadata):
     for file in files:
@@ -36,7 +44,8 @@ for subdir, _, files in os.walk(local_dir_metadata):
                 name = json_data['title']
                 date = json_data['version']['when']
                 author = escape(json_data['version']['by']['displayName'])
-                link = escape(json_data['_links']['base'] + json_data['_links']['webui'])
+                parent_page_id = json_data['ancestors'][0]['id']
+                link = confluence.get_page_url(parent_page_id)
 
             # Concatenate images to parent of metadata directory
             image_path = os.path.join(local_dir_images,json_data["space"]["key"], f'{name}.png')
@@ -47,12 +56,6 @@ for subdir, _, files in os.walk(local_dir_metadata):
 # Sort data by edit date
 data_sorted = sorted(data, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%dT%H:%M:%S.%f%z'), reverse=True)
 
-# Create Confluence page
-confluence = Confluence(
-    url=confluence_url,
-    username=confluence_username,
-    password=confluence_password,
-    verify_ssl=False)
 
 
 page_title = 'Overview'
@@ -98,7 +101,7 @@ for i, item in enumerate(data_sorted):
 
     # Add cell for current item
     table_html += f'<td style="text-align: center;">'
-    table_html += f'<p><strong>{datetime.strptime(item["date"], "%Y-%m-%dT%H:%M:%S.%f%z").date()}</strong>{item["author"]}</p>'
+    table_html += f'<p><strong>{datetime.strptime(item["date"], "%Y-%m-%dT%H:%M:%S.%f%z").date()}</strong> {item["name"]} {item["author"]}</p>'
     table_html += f'<a href="{item["link"]}"><ac:image ac:width="700"><ri:attachment ri:filename="{item["name"]}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image></a>'
     table_html += '</td>'
 
