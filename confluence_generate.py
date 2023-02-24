@@ -44,6 +44,13 @@ for subdir, _, files in os.walk(local_dir_metadata):
 # Sort data by edit date
 data_sorted = sorted(data, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%dT%H:%M:%S.%f%z'), reverse=True)
 
+# Create Confluence page
+confluence = Confluence(
+    url='https://your-confluence-site.com',
+    username='your-username',
+    password='your-password',
+    verify_ssl=False)
+
 
 page_title = 'Overview'
 space_key = 'SpaceKey'
@@ -91,12 +98,7 @@ for i, item in enumerate(data_sorted):
 # Close table tag
 table_html += '</tr></table>'
 
-# Create Confluence page
-confluence = Confluence(
-    url='https://your-confluence-site.com',
-    username='your-username',
-    password='your-password',
-    verify_ssl=False)
+
 
 
 # Update or create page with new content
