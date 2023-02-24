@@ -34,20 +34,6 @@ for subdir, _, files in os.walk(metadata_dir):
 # Sort data by edit date
 data_sorted = sorted(data, key=lambda x: datetime.datetime.strptime(x['edit date'], '%Y-%m-%d'), reverse=True)
 
-# Generate HTML table
-table_html = '<table><tr>'
-
-for i, item in enumerate(data_sorted):
-    # Add a new row after every second item
-    if i > 0 and i % 2 == 0:
-        table_html += '</tr><tr>'
-
-    # Add cell for current item
-    table_html += f'<td style="text-align: center;"><p>{item["edit date"]}</p><p>{item["author"]}</p><img src="data:image/png;base64,{base64.b64encode(open(item["path"], "rb").read()).decode()}" /></td>'
-
-# Close table tag
-table_html += '</tr></table>'
-
 # Create Confluence page
 confluence = Confluence(
     url='https://your-confluence-site.com',
@@ -62,12 +48,47 @@ existing_page_id = confluence.get_page_id(space_key, title=page_title)
 
 # If page exists, update it; otherwise, create a new page
 if existing_page_id:
-    confluence.update_page(
-        page_id=existing_page_id,
-        title=page_title,
-        body=table_html)
+    page_id = existing_page_id
 else:
-    confluence.create_page(
+    page = confluence.create_page(
         space_key=space_key,
         title=page_title,
-        body=table_html)
+        body='')
+
+    page_id = page['id']
+
+# Upload images and attach them to page
+for item in data_sorted:
+    image_path = item['path']
+
+    with open(image_path, 'rb') as f:
+        image_data = f.read()
+
+    attachment_id = confluence.attach_file(
+        filename=os.path.basename(image_path),
+        file=image_data,
+        content_type='image/png',
+        page_id=page_id)
+
+    item['attachment_id'] = attachment_id
+
+# Generate HTML table
+table_html = '<table><tr>'
+
+for i, item in enumerate(data_sorted):
+    # Add a new row after every second item
+    if i > 0 and i % 2 == 0:
+        table_html += '</tr><tr>'
+
+    # Add cell for current item
+    table_html += f'<td style="text-align: center;"><p>{item["edit date"]}</p><p>{item["author"]}</p><ac:image ac:thumbnail="true"><ri:attachment ri:filename="{os.path.basename(item["path"])}" ri:version-at-save="1" ri:content-type="image/png" /><ac:plain-text-body><![CDATA[]]></ac:plain-text-body></ac:image></td>'
+
+# Close table tag
+table_html += '</tr></table>'
+
+# Update or create page with new content
+confluence.update_page(
+    page_id=page_id,
+    title=page_title,
+    body=table_html)
+        
