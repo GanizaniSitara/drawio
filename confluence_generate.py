@@ -20,6 +20,7 @@ local_dir_diagrams = config.get("Local","diagrams")
 local_dir_images = config.get("Local","images")
 local_dir_metadata = config.get("Local","metadata")
 spaces_to_search = config.get("Search","spaces").split(",")
+publish_space = config.get("Confluence","publish_space")
 
 data = []
 
