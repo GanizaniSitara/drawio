@@ -101,7 +101,8 @@ confluence.update_page(
     page_id=page_id,
     title=page_title,
     body=table_html,
-    version={'number':page_version + 1},
-    minor_edit=True,
-    space=publish_space)
+    parent_id=None,
+    type='page',
+    representation='storage',
+    minor_edit=True)
 
