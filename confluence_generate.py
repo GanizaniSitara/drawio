@@ -2,15 +2,12 @@ import configparser
 import os
 import json
 import shutil
-import datetime
+from datetime import datetime
 from atlassian import Confluence
 import base64
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-config = configparser.ConfigParser()
-config.read("confluence.config")
 
 config = configparser.ConfigParser()
 config.read("confluence.config")
@@ -23,6 +20,8 @@ local_dir_diagrams = config.get("Local","diagrams")
 local_dir_images = config.get("Local","images")
 local_dir_metadata = config.get("Local","metadata")
 spaces_to_search = config.get("Search","spaces").split(",")
+
+data = []
 
 # Iterate over all subfolders of metadata directory
 for subdir, _, files in os.walk(local_dir_metadata):
