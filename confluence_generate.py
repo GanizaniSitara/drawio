@@ -77,7 +77,9 @@ for item in data_sorted:
         image_data = f.read()
 
     attachment_id = confluence.attach_file(
-        filename=os.path.basename(image_path),
+        confluence = confluence_url,
+        file_location = os.path.basename(image_path),
+        file_name = name,
         file=image_data,
         content_type='image/png',
         page_id=page_id)
