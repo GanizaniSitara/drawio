@@ -74,7 +74,7 @@ for item in data_sorted:
     attachment_id = confluence.attach_file(
         filename=item["path"],
         name=item["name"],
-       content_type='image/png',
+        content_type='image/png',
         page_id=page_id)
 
     item['attachment_id'] = attachment_id
@@ -88,7 +88,7 @@ for i, item in enumerate(data_sorted):
         table_html += '</tr><tr>'
 
     # Add cell for current item
-    table_html += f'<td style="text-align: center;"><p>{item["edit date"]}</p><p>{item["author"]}</p><ac:image ac:thumbnail="true"><ri:attachment ri:filename="{os.path.basename(item["path"])}" ri:version-at-save="1" ri:content-type="image/png" /><ac:plain-text-body><![CDATA[]]></ac:plain-text-body></ac:image></td>'
+    table_html += f'<td style="text-align: center;"><p>{item["date"]}</p><p>{item["author"]}</p><ac:image ac:thumbnail="true"><ri:attachment ri:filename="{os.path.basename(item["path"])}" ri:version-at-save="1" ri:content-type="image/png" /><ac:plain-text-body><![CDATA[]]></ac:plain-text-body></ac:image></td>'
 
 # Close table tag
 table_html += '</tr></table>'
