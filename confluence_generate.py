@@ -63,7 +63,7 @@ if existing_page_id:
     page_id = existing_page_id
 else:
     page = confluence.create_page(
-        space_key=space_key,
+        space=publish_space,
         title=page_title,
         body='')
 
