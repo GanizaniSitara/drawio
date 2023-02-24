@@ -92,7 +92,7 @@ for i, item in enumerate(data_sorted):
     table_html += f'<td style="text-align: center;">'
     table_html += f'<p>{item["date"]}</p>'
     table_html += f'<p>{item["author"]}</p>'
-    table_html += f'<ac:image ac:height="400"><ri:attachment ri:filename="{item["name"]}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image>'
+    table_html += f'<ac:image ac:width="400"><ri:attachment ri:filename="{item["name"]}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image>'
     table_html += '</td>'
 
     # Close row after every second item
