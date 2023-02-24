@@ -5,6 +5,7 @@ import shutil
 from datetime import datetime
 from atlassian import Confluence
 import base64
+from html import escape
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -34,7 +35,7 @@ for subdir, _, files in os.walk(local_dir_metadata):
                 json_data = json.load(f)
                 name = json_data['title']
                 date = json_data['version']['when']
-                author = json_data['version']['by']['displayName']
+                author = escape(json_data['version']['by']['displayName'])
 
             # Concatenate images to parent of metadata directory
             image_path = os.path.join(local_dir_images,json_data["space"]["key"], f'{name}.png')
