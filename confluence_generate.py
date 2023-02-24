@@ -5,6 +5,7 @@ import shutil
 from datetime import datetime
 from atlassian import Confluence
 import base64
+from html import escape
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -95,10 +96,9 @@ table_html += '</tr></table>'
 
 
 
-
 # Update or create page with new content
 confluence.update_page(
     page_id=page_id,
     title=page_title,
-    body=table_html)
+    body=escape(table_html))
 
