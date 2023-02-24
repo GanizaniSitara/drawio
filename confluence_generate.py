@@ -98,7 +98,7 @@ for i, item in enumerate(data_sorted):
 
     # Add cell for current item
     table_html += f'<td style="text-align: center;">'
-    table_html += f'<p><strong>{datetime.strptime(item["date"], "%Y-%m-%d").date()}</strong><br>{item["author"]}</p>'
+    table_html += f'<p><strong>{datetime.strptime(item["date"], "%Y-%m-%dT%H:%M:%S.%f%z").date()}</strong><br>{item["author"]}</p>'
     table_html += f'<a href="{item["link"]}"><ac:image ac:width="700"><ri:attachment ri:filename="{item["name"]}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image></a>'
     table_html += '</td>'
 
