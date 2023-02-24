@@ -36,23 +36,14 @@ for subdir, _, files in os.walk(local_dir_metadata):
                 author = json_data['version']['by']['displayName']
 
             # Concatenate images to parent of metadata directory
-            image_path = os.path.join(subdir, f'{name}.png')
-            if os.path.exists(image_path):
-                dest_dir = os.path.abspath(os.path.join(subdir, os.pardir))
-                dest_path = os.path.join(dest_dir, f'{name}.png')
-                shutil.copyfile(image_path, dest_path)
+            image_path = os.path.join(local_dir_images,json_data["space"]["key"], f'{name}.png')
 
             # Add data to list
-            data.append({'name': name, 'path': dest_path, 'author': author, 'edit date': date})
+            data.append({'name': name, 'path': image_path, 'author': author, 'date': date})
 
 # Sort data by edit date
-data_sorted = sorted(data, key=lambda x: datetime.datetime.strptime(x['edit date'], '%Y-%m-%d'), reverse=True)
+data_sorted = sorted(data, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%dT%H:%M%S.%f%z'), reverse=True)
 
-# Create Confluence page
-confluence = Confluence(
-    url='https://your-confluence-site.com',
-    username='your-username',
-    password='your-password')
 
 page_title = 'Overview'
 space_key = 'SpaceKey'
@@ -99,6 +90,14 @@ for i, item in enumerate(data_sorted):
 
 # Close table tag
 table_html += '</tr></table>'
+
+# Create Confluence page
+confluence = Confluence(
+    url='https://your-confluence-site.com',
+    username='your-username',
+    password='your-password',
+    verify_ssl=False)
+
 
 # Update or create page with new content
 confluence.update_page(
