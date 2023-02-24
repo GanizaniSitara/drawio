@@ -46,9 +46,9 @@ data_sorted = sorted(data, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%dT
 
 # Create Confluence page
 confluence = Confluence(
-    url='https://your-confluence-site.com',
-    username='your-username',
-    password='your-password',
+    url=confluence_url,
+    username=confluence_username,
+    password=confluence_password,
     verify_ssl=False)
 
 
