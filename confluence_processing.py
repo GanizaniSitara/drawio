@@ -1,12 +1,28 @@
 import configparser
+import json
 import os
 import re
 import requests
+import sys
+import html
+#import timeit
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from atlassian import Confluence
+
+config = configparser.ConfigParser()
+config.read("confluence.config")
+confluence_url = config.get("Confluence","url")
+confluence_username = config.get("Confluence", "username")
+confluence_password = config.get("Confluence", "password")
+local_dir = config.get("Local","directory")
+local_dir_diagrams = config.get("Local","diagrams")
+local_dir_images = config.get("Local","images")
+local_dir_metadata = config.get("Local","metadata")
+spaces_to_search = config.get("Search","spaces").split(",")
+publish_space = config.get("Confluence","publish_space")
 
 
 def download_drawio_attachments(confluence, page, attachments, local_dir):
@@ -65,14 +81,8 @@ def get_all_spaces(confluence):
 
 
 def main():
-    config = configparser.ConfigParser()
-    config.read("confluence.config")
 
-    confluence_url = config["confluence_url"]
-    confluence_username = config["confluence_username"]
-    confluence_password = config["confluence_password"]
-    local_dir = config["local_dir"]
-    spaces_to_search = config["spaces_to_search"]
+
 
     # Create a Confluence instance
     confluence = Confluence(
