@@ -71,14 +71,15 @@ for subdir, _, files in os.walk(local_dir_metadata):
     # If page exists, update it; otherwise, create a new page
     if existing_page_id:
         page_id = existing_page_id
-        page_version = confluence.get_page_by_id(page_id, expand='version')['version']['number']
-    else:
-        page = confluence.create_page(
-            space=publish_space,
-            title=page_title,
-            body='')
+        # page_version = confluence.get_page_by_id(page_id, expand='version')['version']['number']
+        confluence.remove_page(page_id)
 
-        page_id = page['id']
+    page = confluence.create_page(
+        space=publish_space,
+        title=page_title,
+        body='')
+
+    page_id = page['id']
 
     # Upload images and attach them to page
     for item in data_sorted:
@@ -103,21 +104,14 @@ for subdir, _, files in os.walk(local_dir_metadata):
             table_html += '<tr>'
 
         # Add cell for current item
-        # table_html += f'<td style="text-align: center;">'
-        # table_html += f'<p>{datetime.strptime(item["date"],"%Y-%m-%dT%H:%M:%S.%f%z").date()}</p>'
-        # table_html += f'<p>{item["author"]}</p>'
-        # table_html += f'<ac:image ac:width="700"><ri:attachment ri:filename="{item["name"]}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image>'
-        # table_html += '</td>'
-
-        # Add cell for current item
         table_html += f'<td style="text-align: center;">'
         table_html += f'<p>{datetime.strptime(item["date"], "%Y-%m-%dT%H:%M:%S.%f%z").date()} <strong>{item["name"]}</strong> {item["author"]}</p>'
         table_html += f'<a href="{item["link"]}"><ac:image ac:width="700"><ri:attachment ri:filename="{item["name"]}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image></a>'
         table_html += '</td>'
 
-    # Close row after every second item
-    if i % 2 == 1:
-        table_html += '</tr>'
+        # Close row after every second item
+        if i % 2 == 1:
+            table_html += '</tr>'
 
     # If there is an odd number of items, add an empty cell to the last row
     if len(data_sorted) % 2 == 1:
