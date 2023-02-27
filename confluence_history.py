@@ -14,7 +14,9 @@ config.read("confluence.config")
 confluence_url = config.get("Confluence","url")
 confluence_username = config.get("Confluence", "username")
 confluence_password = config.get("Confluence", "password")
+spaces_to_search = config.get("Search","spaces").split(",")
 publish_space = config.get("Confluence","publish_space")
+
 
 # Create a Confluence object with the specified URL, username, and password
 confluence = Confluence(url=confluence_url,
@@ -22,17 +24,11 @@ confluence = Confluence(url=confluence_url,
                         password=confluence_password,
                         verify_ssl=False)
 
-# Set the parent page ID for the new page to be created
-parent_id = "12345"  # replace with the actual parent page ID
-
-# Set the keys for the spaces to retrieve page updates from
-space_keys = ["space1", "space2", "space3"]  # replace with the actual space keys
-
 # Define an empty list to store the generated graphs
 graphs = []
 
 # Generate a frequency graph for each space
-for space_key in space_keys:
+for space_key in spaces_to_search:
     # Retrieve all pages from the specified space using the Confluence API
     pages = confluence.get_all_pages_from_space(space_key)
 
