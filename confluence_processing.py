@@ -62,24 +62,6 @@ def download_drawio_attachments(confluence, page, attachments, local_dir):
                             f.write(chunk)
 
 
-def get_all_spaces(confluence):
-    # Get all spaces from the Confluence instance
-    all_spaces = []
-    start = 0
-    limit = 1000
-
-    while True:
-        response = confluence.get_all_spaces(start=start, limit=limit)
-
-        if not response.get("results"):
-            break
-
-        all_spaces.extend(response["results"])
-        start += limit
-
-    return all_spaces
-
-
 def main():
 
 
