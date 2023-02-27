@@ -23,7 +23,7 @@ local_dir_metadata = config.get("Local","metadata")
 spaces_to_search = config.get("Search","spaces").split(",")
 publish_space = config.get("Confluence","publish_space")
 
-data = []
+
 
 # Create Confluence page
 confluence = Confluence(
@@ -35,6 +35,12 @@ confluence = Confluence(
 
 # Iterate over all subfolders of metadata directory
 for subdir, _, files in os.walk(local_dir_metadata):
+    data = []
+
+    dir = os.path.split(subdir)[-1]
+    if dir == 'metadata':
+        continue
+
     for file in files:
         if file.endswith('.json'):
             # Read JSON file and extract data
@@ -52,79 +58,83 @@ for subdir, _, files in os.walk(local_dir_metadata):
             # Add data to list
             data.append({'name': name, 'path': image_path, 'author': author, 'date': date, 'link': link})
 
-# Sort data by edit date
-data_sorted = sorted(data, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%dT%H:%M:%S.%f%z'), reverse=True)
+    # Sort data by edit date
+    data_sorted = sorted(data, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%dT%H:%M:%S.%f%z'), reverse=True)
 
 
 
-page_title = 'Overview'
+    page_title = 'Overview ' + dir
 
-# Check if page already exists
-existing_page_id = confluence.get_page_id(space=publish_space, title=page_title)
+    # Check if page already exists
+    existing_page_id = confluence.get_page_id(space=publish_space, title=page_title)
 
-# If page exists, update it; otherwise, create a new page
-if existing_page_id:
-    page_id = existing_page_id
-    page_version = confluence.get_page_by_id(page_id, expand='version')['version']['number']
-else:
-    page = confluence.create_page(
-        space=publish_space,
-        title=page_title,
-        body='')
+    # If page exists, update it; otherwise, create a new page
+    if existing_page_id:
+        page_id = existing_page_id
+        page_version = confluence.get_page_by_id(page_id, expand='version')['version']['number']
+    else:
+        page = confluence.create_page(
+            space=publish_space,
+            title=page_title,
+            body='')
 
-    page_id = page['id']
+        page_id = page['id']
 
-# Upload images and attach them to page
-for item in data_sorted:
-    print(f"INFO - uploading {item['path']}")
-    attachment_id = confluence.attach_file(
-        filename=item["path"],
-        name=item["name"],
-        content_type='image/png',
-        page_id=page_id)
+    # Upload images and attach them to page
+    for item in data_sorted:
+        try:
+            print(f"INFO - uploading {item['path']}")
+            attachment_id = confluence.attach_file(
+                filename=item["path"],
+                name=item["name"],
+                content_type='image/png',
+                page_id=page_id)
 
-    item['attachment_id'] = attachment_id
+            item['attachment_id'] = attachment_id
+        except Exception as e:
+            print(f"ERROR - could not upload {item['path']} - duplicate?")
+            print(e)
 
-# Generate HTML table
-table_html = '<table>'
-for i, item in enumerate(data_sorted):
-    # Add a new row after every second item
-    if i % 2 == 0:
-        table_html += '<tr>'
+    # Generate HTML table
+    table_html = '<table>'
+    for i, item in enumerate(data_sorted):
+        # Add a new row after every second item
+        if i % 2 == 0:
+            table_html += '<tr>'
 
-    # Add cell for current item
-    # table_html += f'<td style="text-align: center;">'
-    # table_html += f'<p>{datetime.strptime(item["date"],"%Y-%m-%dT%H:%M:%S.%f%z").date()}</p>'
-    # table_html += f'<p>{item["author"]}</p>'
-    # table_html += f'<ac:image ac:width="700"><ri:attachment ri:filename="{item["name"]}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image>'
-    # table_html += '</td>'
+        # Add cell for current item
+        # table_html += f'<td style="text-align: center;">'
+        # table_html += f'<p>{datetime.strptime(item["date"],"%Y-%m-%dT%H:%M:%S.%f%z").date()}</p>'
+        # table_html += f'<p>{item["author"]}</p>'
+        # table_html += f'<ac:image ac:width="700"><ri:attachment ri:filename="{item["name"]}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image>'
+        # table_html += '</td>'
 
-    # Add cell for current item
-    table_html += f'<td style="text-align: center;">'
-    table_html += f'<p><strong>{datetime.strptime(item["date"], "%Y-%m-%dT%H:%M:%S.%f%z").date()}</strong> {item["name"]} {item["author"]}</p>'
-    table_html += f'<a href="{item["link"]}"><ac:image ac:width="700"><ri:attachment ri:filename="{item["name"]}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image></a>'
-    table_html += '</td>'
+        # Add cell for current item
+        table_html += f'<td style="text-align: center;">'
+        table_html += f'<p>{datetime.strptime(item["date"], "%Y-%m-%dT%H:%M:%S.%f%z").date()} <strong>{item["name"]}</strong> {item["author"]}</p>'
+        table_html += f'<a href="{item["link"]}"><ac:image ac:width="700"><ri:attachment ri:filename="{item["name"]}" ri:version-at-save="1" ri:content-type="image/png" /></ac:image></a>'
+        table_html += '</td>'
 
     # Close row after every second item
     if i % 2 == 1:
         table_html += '</tr>'
 
-# If there is an odd number of items, add an empty cell to the last row
-if len(data_sorted) % 2 == 1:
-    table_html += '<td></td></tr>'
+    # If there is an odd number of items, add an empty cell to the last row
+    if len(data_sorted) % 2 == 1:
+        table_html += '<td></td></tr>'
 
-table_html += '</table>'
-
-
+    table_html += '</table>'
 
 
-# Update or create page with new content
-confluence.update_page(
-    page_id=page_id,
-    title=page_title,
-    body=table_html,
-    parent_id=None,
-    type='page',
-    representation='storage',
-    minor_edit=True)
+
+
+    # Update or create page with new content
+    confluence.update_page(
+        page_id=page_id,
+        title=page_title,
+        body=table_html,
+        parent_id=None,
+        type='page',
+        representation='storage',
+        minor_edit=True)
 
