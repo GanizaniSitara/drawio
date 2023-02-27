@@ -17,7 +17,10 @@ confluence_password = config.get("Confluence", "password")
 publish_space = config.get("Confluence","publish_space")
 
 # Create a Confluence object with the specified URL, username, and password
-confluence = Confluence(url=confluence_url, username=confluence_username, password=confluence_password)
+confluence = Confluence(url=confluence_url,
+                        username=confluence_username,
+                        password=confluence_password,
+                        verify_ssl=False)
 
 # Set the parent page ID for the new page to be created
 parent_id = "12345"  # replace with the actual parent page ID
