@@ -5,6 +5,9 @@ import requests
 import matplotlib.pyplot as plt
 from atlassian import Confluence
 
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 # Read the configuration details from the confluence.config file
 config = configparser.ConfigParser()
 config.read('confluence.config')
@@ -16,9 +19,6 @@ confluence_username = config.get("Confluence", "username")
 confluence_password = config.get("Confluence", "password")
 spaces_to_search = config.get("Search","spaces").split(",")
 publish_space = config.get("Confluence","publish_space")
-
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Create a Confluence object with the specified URL, username, and password
 confluence = Confluence(url=confluence_url,
@@ -33,7 +33,7 @@ page_counts = {}
 # Generate a frequency graph for each space
 for space_key in spaces_to_search:
     # Retrieve all pages from the specified space using the Confluence API
-    pages = confluence.get_all_pages_from_space(space_key, expand='version, history')
+    pages = confluence.get_all_pages_from_space(space_key, expand='version,history')
 
     # Extract the update dates for each page and count the number of pages updated on each day
     update_dates = [datetime.datetime.strptime(page['version']['when'][:10], '%Y-%m-%d').date() for page in pages]
@@ -76,13 +76,33 @@ for space_key in spaces_to_search:
     # Count the number of pages in the space
     page_counts[space_key] = len(pages)
 
+page_title="Update History"
+
+# Check if page already exists
+existing_page_id = confluence.get_page_id(space=publish_space, title=page_title)
+
+# If page exists, update it; otherwise, create a new page
+if existing_page_id:
+    page_id = existing_page_id
+    # page_version = confluence.get_page_by_id(page_id, expand='version')['version']['number']
+    confluence.remove_page(page_id)
+
+page = confluence.create_page(
+    space=publish_space,
+    title=page_title,
+    body='')
+
+page_id = page['id']
+
+
+
 # Generate the HTML content for the new Confluence page
 html = "<h1>Page Update Frequency</h1>"
 html += "<ul>"
 
 for space_key, graph in graphs:
     # Upload the graph as an attachment to the Confluence server
-    attachment_url = confluence.attach_file(graph, space_key=space_key, filename=f"PageUpdateFrequency{space_key}.png")
+    attachment_url = confluence.attach_file(graph, page_id=page_id)
 
     # Calculate the percentage of pages updated within the last year
     one_year_ago = datetime.datetime.now() - datetime.timedelta(days=365)
@@ -98,9 +118,9 @@ for space_key, graph in graphs:
 
     # Add the space, page count, and graph to the HTML content
     html += f"<li><h2>{space_link}</h2>"
-    html += f"<p>Number of pages: {page_counts[space_key]}</p>"
+    html += f"<p>Total number of pages: {page_counts[space_key]}</p>"
     html += f"<p>Percentage of pages updated within the last year: {percentage_updated:.2f}%</p>"
-    html += f"<ac:image><ri:attachment ri:filename='PageUpdateFrequency{space_key}.png' ri:version-at-save='1' ri:content-type='image/png' />/ac:image></li>"
+    html += f"<ac:image><ri:attachment ri:filename='PageUpdateFrequency{space_key}.png' ri:version-at-save='1' ri:content-type='image/png' /></ac:image></li>"
 
 html += "</ul>"
 
@@ -108,7 +128,6 @@ html += "</ul>"
 title = "Page Update Frequency"
 confluence.udpate_page(
     page_id=page_id,
-    title=page_title,
     body=html,
     parent_id=None,
     type='page',
