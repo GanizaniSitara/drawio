@@ -33,10 +33,22 @@ page_counts = {}
 # Generate a frequency graph for each space
 for space_key in spaces_to_search:
     # Retrieve all pages from the specified space using the Confluence API
+    all_pages = {}
     pages = confluence.get_all_pages_from_space(space_key, expand='version,history')
 
+    limit = len(pages)
+    all_pages[space_key].extend(pages)
+    start = 0
+
+    # Retrieve additional pages until all pages have been retrieved
+    while len(pages) == limit:
+        start += limit
+        pages = confluence.get_all_pages_from_space(space_key, start=start, expand='version,history')
+        all_pages.extend(pages)
+
+
     # Extract the update dates for each page and count the number of pages updated on each day
-    update_dates = [datetime.datetime.strptime(page['version']['when'][:10], '%Y-%m-%d').date() for page in pages]
+    update_dates = [datetime.datetime.strptime(page['version']['when'][:10], '%Y-%m-%d').date() for page in all_pages]
     update_counts = {}
     for update_date in update_dates:
         if update_date in update_counts:
@@ -59,7 +71,7 @@ for space_key in spaces_to_search:
     ax.set_ylabel("# Updates")
 
     # Set the title of the graph to "Page Update Frequency"
-    ax.set_title(f"{space_key} - Current Version Latest Updates")
+    ax.set_title(f"{space_key} - Current Page Versions (most recent updates)")
 
     # Rotate the x-axis labels for better readability
     plt.xticks(rotation=45)
@@ -74,7 +86,7 @@ for space_key in spaces_to_search:
     graphs.append((space_key, f"PageUpdateFrequency{space_key}.png"))
 
     # Count the number of pages in the space
-    page_counts[space_key] = len(pages)
+    page_counts[space_key] = len(all_pages)
 
 page_title="Update History"
 
