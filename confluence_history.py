@@ -26,11 +26,12 @@ confluence = Confluence(url=confluence_url,
 
 # Define an empty list to store the generated graphs
 graphs = []
+page_counts = {}
 
 # Generate a frequency graph for each space
 for space_key in spaces_to_search:
     # Retrieve all pages from the specified space using the Confluence API
-    pages = confluence.get_all_pages_from_space(space_key)
+    pages = confluence.get_all_pages_from_space(space_key, expand='version')
 
     # Extract the update dates for each page and count the number of pages updated on each day
     update_dates = [datetime.datetime.strptime(page['version']['when'][:10], '%Y-%m-%d').date() for page in pages]
@@ -73,7 +74,10 @@ for space_key in spaces_to_search:
     # Append the binary buffer to the list of graphs
     graphs.append((space_key, buffer))
 
-# Create a new Confluence page with a list of the spaces and the corresponding frequency graphs
+    # Count the number of pages in the space
+    page_counts[space_key] = len(pages)
+
+# Generate the HTML content for the new Confluence page
 html = "<h1>Page Update Frequency</h1>"
 html += "<ul>"
 
@@ -81,26 +85,32 @@ for space_key, graph in graphs:
     # Upload the graph as an attachment to the Confluence server
     attachment_url = confluence.attach_file(graph, space_key=space_key, filename="page_update_frequency.png")
 
+    # Calculate the percentage of pages updated within the last year
+    one_year_ago = datetime.datetime.now() - datetime.timedelta(days=365)
+    updated_pages = [page for page in pages if datetime.datetime.strptime(page['version']['when'][:10], '%Y-%m-%d').date() >= one_year_ago.date()]
+    if len(pages) > 0:
+        percentage_updated = len(updated_pages) / len(pages) * 100
+    else:
+        percentage_updated = 0
+
     # Create a hyperlink to the space with the corresponding URL and key
     space_url = f"{confluence_url}/spaces/{space_key}"
     space_link = f"<a href=\"{space_url}\">{space_key.capitalize()}</a>"
 
-    # Add the space and graph to the HTML content
+    # Add the space, page count, and graph to the HTML content
     html += f"<li><h2>{space_link}</h2>"
+    html += f"<p>Number of pages: {page_counts[space_key]}</p>"
+    html += f"<p>Percentage of pages updated within the last year: {percentage_updated:.2f}%</p>"
     html += f"<img src=\"{attachment_url}\" alt=\"{space_key} - Page Update Frequency\"></li>"
 
 html += "</ul>"
 
-#Define the title and content for the new Confluence page
+# Create a new Confluence page with the list of spaces and frequency graphs
 title = "Page Update Frequency"
-content = html
-
-# Create the new Confluence page with the specified title and content
 page_data = {
     "type": "page",
     "title": title,
     "space": {"key": publish_space},
-    "body": {"storage": {"value": content, "representation": "storage"}},
+    "body": {"storage": {"value": html, "representation": "storage"}},
 }
 confluence.create_page(page_data)
-
