@@ -53,13 +53,13 @@ for space_key in spaces_to_search:
     ax.bar(x_values, y_values)
 
     # Set the x-axis label to "Update Date"
-    ax.set_xlabel("Update Date")
+    # ax.set_xlabel("Update Date")
 
     # Set the y-axis label to "Number of Page Updates"
-    ax.set_ylabel("Number of Page Updates")
+    ax.set_ylabel("# Updates")
 
     # Set the title of the graph to "Page Update Frequency"
-    ax.set_title(f"{space_key.capitalize()} - Page Update Frequency")
+    ax.set_title(f"{space_key} - Current Version Latest Updates")
 
     # Rotate the x-axis labels for better readability
     plt.xticks(rotation=45)
@@ -114,7 +114,7 @@ for space_key, graph in graphs:
 
     # Create a hyperlink to the space with the corresponding URL and key
     space_url = f"{confluence_url}/spaces/{space_key}"
-    space_link = f"<a href=\"{space_url}\">{space_key.capitalize()}</a>"
+    space_link = f"<a href=\"{space_url}\">{space_key}</a>"
 
     # Add the space, page count, and graph to the HTML content
     html += f"<li><h2>{space_link}</h2>"
@@ -126,7 +126,8 @@ html += "</ul>"
 
 # Create a new Confluence page with the list of spaces and frequency graphs
 title = "Page Update Frequency"
-confluence.udpate_page(
+confluence.update_page(
+    title=page_title,
     page_id=page_id,
     body=html,
     parent_id=None,
