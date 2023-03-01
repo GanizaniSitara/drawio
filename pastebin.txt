@@ -29,8 +29,10 @@ for data in data_list:
     else:
         html += "<p><strong>Note:</strong> This space is not shared.</p>\n"
 
-    # Add Confluence image
-    html += "<img src='history_" + data['ConfluenceSpace'] + ".png' alt='Confluence Space History'>\n"
+    # Add Confluence image using ac:image tag
+    html += "<ac:image>\n"
+    html += "<ri:attachment ri:filename='history_" + data['ConfluenceSpace'] + ".png'/>\n"
+    html += "</ac:image>\n"
 
     # Close HTML code
     html += "</body>\n"
