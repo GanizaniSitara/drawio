@@ -5,43 +5,55 @@ data_list = [{'L1':'Heading 1', 'L2':'Subheading 1', 'AppName':['App 1', 'App 2'
              {'L1':'Heading 2', 'L2':'Subheading 2', 'AppName':['App 3', 'App 4'], 'ConfluenceSpace':'Space 2', 'ConfluenceIsShared':False},
              {'L1':'Heading 3', 'L2':'Subheading 3', 'AppName':['App 1', 'App 5'], 'ConfluenceSpace':'Space 1', 'ConfluenceIsShared':True}]
 
-# Generate HTML code for each dictionary in the list
-html_code = ""
+# Group data by L1 heading
+data_by_l1 = {}
 for data in data_list:
-    html_code += "<html>\n"
-    html_code += "<head>\n"
-    html_code += "<title>" + html.escape(data['L1']) + "</title>\n"
-    html_code += "</head>\n"
-    html_code += "<body>\n"
-    html_code += "<h1>" + html.escape(data['L1']) + "</h1>\n"
-    html_code += "<h2>" + html.escape(data['L2']) + "</h2>\n"
-    html_code += "<p><strong>Confluence Space:</strong> " + html.escape(data['ConfluenceSpace']) + "</p>\n"
+    l1 = data['L1']
+    if l1 not in data_by_l1:
+        data_by_l1[l1] = []
+    data_by_l1[l1].append(data)
 
-    # Check if the space is shared
-    if data['ConfluenceIsShared']:
-        shared_with = []
+# Generate HTML code for each L1 heading
+html_code = "<html>\n"
+for l1, l1_data in data_by_l1.items():
+    # Generate HTML code for each L2 heading
+    l2_by_l1 = {}
+    for data in l1_data:
+        l2 = data['L2']
+        if l2 not in l2_by_l1:
+            l2_by_l1[l2] = []
+        l2_by_l1[l2].append(data)
 
-        # Scan all other dictionaries for the same ConfluenceSpace name
-        for other_data in data_list:
-            if other_data['ConfluenceSpace'] == data['ConfluenceSpace'] and other_data != data:
-                shared_with += other_data['AppName']
+    for l2, l2_data in l2_by_l1.items():
+        html_code += "<head>\n"
+        html_code += "<title>" + html.escape(l1) + " - " + html.escape(l2) + "</title>\n"
+        html_code += "</head>\n"
+        html_code += "<body>\n"
+        html_code += "<h1>" + html.escape(l1) + "</h1>\n"
+        html_code += "<h2>" + html.escape(l2) + "</h2>\n"
 
-        # Use html.escape to escape special characters
-        shared_with = [html.escape(app) for app in shared_with]
+        # Generate HTML code for each dictionary in the list
+        for data in l2_data:
+            html_code += "<p><strong>Confluence Space:</strong> " + html.escape(data['ConfluenceSpace']) + "</p>\n"
 
-        html_code += "<p><strong>Note:</strong> This space is shared.</p>\n"
-        html_code += "<p><strong>Shared with:</strong> " + ", ".join(shared_with) + "</p>\n"
-    else:
-        html_code += "<p><strong>Note:</strong> This space is not shared.</p>\n"
+            # Check if the space is shared
+            if data['ConfluenceIsShared']:
+                shared_with = []
 
-    # Add Confluence image using ac:image tag
-    html_code += "<ac:image>\n"
-    html_code += "<ri:attachment ri:filename='history_" + html.escape(data['ConfluenceSpace']) + ".png'/>\n"
-    html_code += "</ac:image>\n"
+                # Scan all other dictionaries for the same ConfluenceSpace name
+                for other_data in data_list:
+                    if other_data['ConfluenceSpace'] == data['ConfluenceSpace'] and other_data != data:
+                        shared_with += other_data['AppName']
 
-    # Close HTML code
-    html_code += "</body>\n"
-    html_code += "</html>\n"
+                # Use html.escape to escape special characters
+                shared_with = [html.escape(app) for app in shared_with]
 
-# Print or use the generated HTML code
-print(html_code)
+                html_code += "<p><strong>Note:</strong> This space is shared.</p>\n"
+                if len(shared_with) > 0:
+                    shared_with_str = ", ".join(shared_with[:-1]) + " and " + shared_with[-1]
+                    html_code += "<p><strong>Shared with:</strong> " + shared_with_str + "</p>\n"
+                else:
+                    html_code += "<p><strong>Shared with:</strong> None</p>\n"
+            else:
+                html_code += "<p><strong>Note:</strong> This space is not shared.</p
+
