@@ -55,7 +55,7 @@ for l1, l1_data in data_by_l1.items():
                 else:
                     html_code += "<p><strong>Shared with:</strong> None</p>\n"
             else:
-                html_code += "<p><strong>Note:</strong> This space is not shared.</p
+                html_code += "<p><strong>Note:</strong> This
             # Add Confluence image using ac:image tag
             html_code += "<ac:image>\n"
             html_code += "<ri:attachment ri:filename='history_" + html.escape(data['ConfluenceSpace']) + ".png'/>\n"
@@ -69,4 +69,3 @@ html_code += "</html>\n"
 
 # Print or use the generated HTML code
 print(html_code)
-
