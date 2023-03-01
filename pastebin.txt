@@ -10,12 +10,12 @@ html_code = ""
 for data in data_list:
     html_code += "<html>\n"
     html_code += "<head>\n"
-    html_code += "<title>" + data['L1'] + "</title>\n"
+    html_code += "<title>" + html.escape(data['L1']) + "</title>\n"
     html_code += "</head>\n"
     html_code += "<body>\n"
-    html_code += "<h1>" + data['L1'] + "</h1>\n"
-    html_code += "<h2>" + data['L2'] + "</h2>\n"
-    html_code += "<p><strong>Confluence Space:</strong> " + data['ConfluenceSpace'] + "</p>\n"
+    html_code += "<h1>" + html.escape(data['L1']) + "</h1>\n"
+    html_code += "<h2>" + html.escape(data['L2']) + "</h2>\n"
+    html_code += "<p><strong>Confluence Space:</strong> " + html.escape(data['ConfluenceSpace']) + "</p>\n"
 
     # Check if the space is shared
     if data['ConfluenceIsShared']:
@@ -36,7 +36,7 @@ for data in data_list:
 
     # Add Confluence image using ac:image tag
     html_code += "<ac:image>\n"
-    html_code += "<ri:attachment ri:filename='history_" + data['ConfluenceSpace'] + ".png'/>\n"
+    html_code += "<ri:attachment ri:filename='history_" + html.escape(data['ConfluenceSpace']) + ".png'/>\n"
     html_code += "</ac:image>\n"
 
     # Close HTML code
