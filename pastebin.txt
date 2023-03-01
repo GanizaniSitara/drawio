@@ -6,16 +6,16 @@ data_list = [{'L1':'Heading 1', 'L2':'Subheading 1', 'AppName':['App 1', 'App 2'
              {'L1':'Heading 3', 'L2':'Subheading 3', 'AppName':['App 1', 'App 5'], 'ConfluenceSpace':'Space 1', 'ConfluenceIsShared':True}]
 
 # Generate HTML code for each dictionary in the list
-html = ""
+html_code = ""
 for data in data_list:
-    html += "<html>\n"
-    html += "<head>\n"
-    html += "<title>" + data['L1'] + "</title>\n"
-    html += "</head>\n"
-    html += "<body>\n"
-    html += "<h1>" + data['L1'] + "</h1>\n"
-    html += "<h2>" + data['L2'] + "</h2>\n"
-    html += "<p><strong>Confluence Space:</strong> " + data['ConfluenceSpace'] + "</p>\n"
+    html_code += "<html>\n"
+    html_code += "<head>\n"
+    html_code += "<title>" + data['L1'] + "</title>\n"
+    html_code += "</head>\n"
+    html_code += "<body>\n"
+    html_code += "<h1>" + data['L1'] + "</h1>\n"
+    html_code += "<h2>" + data['L2'] + "</h2>\n"
+    html_code += "<p><strong>Confluence Space:</strong> " + data['ConfluenceSpace'] + "</p>\n"
 
     # Check if the space is shared
     if data['ConfluenceIsShared']:
@@ -29,19 +29,19 @@ for data in data_list:
         # Use html.escape to escape special characters
         shared_with = [html.escape(app) for app in shared_with]
 
-        html += "<p><strong>Note:</strong> This space is shared.</p>\n"
-        html += "<p><strong>Shared with:</strong> " + ", ".join(shared_with) + "</p>\n"
+        html_code += "<p><strong>Note:</strong> This space is shared.</p>\n"
+        html_code += "<p><strong>Shared with:</strong> " + ", ".join(shared_with) + "</p>\n"
     else:
-        html += "<p><strong>Note:</strong> This space is not shared.</p>\n"
+        html_code += "<p><strong>Note:</strong> This space is not shared.</p>\n"
 
     # Add Confluence image using ac:image tag
-    html += "<ac:image>\n"
-    html += "<ri:attachment ri:filename='history_" + data['ConfluenceSpace'] + ".png'/>\n"
-    html += "</ac:image>\n"
+    html_code += "<ac:image>\n"
+    html_code += "<ri:attachment ri:filename='history_" + data['ConfluenceSpace'] + ".png'/>\n"
+    html_code += "</ac:image>\n"
 
     # Close HTML code
-    html += "</body>\n"
-    html += "</html>\n"
+    html_code += "</body>\n"
+    html_code += "</html>\n"
 
 # Print or use the generated HTML code
-print(html)
+print(html_code)
