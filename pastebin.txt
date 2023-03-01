@@ -48,17 +48,24 @@ for l1, l1_data in data_by_l1.items():
                 # Use html.escape to escape special characters
                 shared_with = [html.escape(app) for app in shared_with]
 
+                html_code += "<p><strong>Note:</strong> This space is shared.</p>\n"
                 if len(shared_with) > 0:
                     shared_with_str = ", ".join(shared_with[:-1]) + " and " + shared_with[-1]
-                    html_code += "<p><strong>Note:</strong> This space is shared with " + shared_with_str + ".</p>\n"
+                    html_code += "<p><strong>Shared with:</strong> " + shared_with_str + "</p>\n"
                 else:
-                    html_code += "<p><strong>Note:</strong> This space is not shared with any other application.</p>\n"
+                    html_code += "<p><strong>Shared with:</strong> None</p>\n"
+            else:
+                html_code += "<p><strong>Note:</strong> This app does not share confluence"
+            # Add Confluence image using ac:image tag
+            html_code += "<ac:image>\n"
+            html_code += "<ri:attachment ri:filename='history_" + html.escape(data['ConfluenceSpace']) + ".png'/>\n"
+            html_code += "</ac:image>\n"
 
-                # Add Confluence image using ac:image tag
-                html_code += "<ac:image>\n"
-                html_code += "<ri:attachment ri:filename='history_" + html.escape(data['ConfluenceSpace']) + ".png'/>\n"
-                html_code += "</ac:image>\n"
         # Close HTML code for L2 heading
         html_code += "</body>\n"
+
+# Close HTML code for L1 heading
 html_code += "</html>\n"
+
+# Print or use the generated HTML code
 print(html_code)
