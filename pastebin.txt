@@ -1,0 +1,40 @@
+# Given data
+data_list = [{'L1':'Heading 1', 'L2':'Subheading 1', 'AppName':['App 1', 'App 2'], 'ConfluenceSpace':'Space 1', 'ConfluenceIsShared':True},
+             {'L1':'Heading 2', 'L2':'Subheading 2', 'AppName':['App 3', 'App 4'], 'ConfluenceSpace':'Space 2', 'ConfluenceIsShared':False},
+             {'L1':'Heading 3', 'L2':'Subheading 3', 'AppName':['App 1', 'App 5'], 'ConfluenceSpace':'Space 1', 'ConfluenceIsShared':True}]
+
+# Generate HTML code for each dictionary in the list
+html = ""
+for data in data_list:
+    html += "<html>\n"
+    html += "<head>\n"
+    html += "<title>" + data['L1'] + "</title>\n"
+    html += "</head>\n"
+    html += "<body>\n"
+    html += "<h1>" + data['L1'] + "</h1>\n"
+    html += "<h2>" + data['L2'] + "</h2>\n"
+    html += "<p><strong>Confluence Space:</strong> " + data['ConfluenceSpace'] + "</p>\n"
+
+    # Check if the space is shared
+    if data['ConfluenceIsShared']:
+        shared_with = []
+
+        # Scan all other dictionaries for the same ConfluenceSpace name
+        for other_data in data_list:
+            if other_data['ConfluenceSpace'] == data['ConfluenceSpace'] and other_data != data:
+                shared_with += other_data['AppName']
+
+        html += "<p><strong>Note:</strong> This space is shared.</p>\n"
+        html += "<p><strong>Shared with:</strong> " + ", ".join(list(set(shared_with))) + "</p>\n"
+    else:
+        html += "<p><strong>Note:</strong> This space is not shared.</p>\n"
+
+    # Add Confluence image
+    html += "<img src='history_" + data['ConfluenceSpace'] + ".png' alt='Confluence Space History'>\n"
+
+    # Close HTML code
+    html += "</body>\n"
+    html += "</html>\n"
+
+# Print or use the generated HTML code
+print(html)

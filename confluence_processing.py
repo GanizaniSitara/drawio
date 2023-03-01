@@ -64,8 +64,6 @@ def download_drawio_attachments(confluence, page, attachments, local_dir):
 
 def main():
 
-
-
     # Create a Confluence instance
     confluence = Confluence(
         url=confluence_url,
@@ -75,8 +73,9 @@ def main():
     )
 
     # Get all pages in the specified spaces
-    all_pages = []
+
     for space_key in spaces_to_search:
+        all_pages = []
         start = 0
         limit = 1000
 
@@ -89,16 +88,16 @@ def main():
             all_pages.extend(response["results"])
             start += limit
 
-    # Download draw.io attachments from the pages
-    for page in all_pages:
-        attachments_url = page["_links"]["attachments"]
-        attachments_response = confluence.get(attachments_url)
+        # Download draw.io attachments from the pages
+        for page in all_pages:
+            attachments_url = page["_links"]["attachments"]
+            attachments_response = confluence.get(attachments_url)
 
-        # Check if the page has any attachments and download draw.io attachments
-        attachments = attachments_response.get("results", [])
-        if attachments:
-            download_drawio_attachments(confluence, page, attachments, local_dir)
-            print(f"Downloaded draw.io attachments from '{page['title']}' in '{page['space']['name']}' space")
+            # Check if the page has any attachments and download draw.io attachments
+            attachments = attachments_response.get("results", [])
+            if attachments:
+                download_drawio_attachments(confluence, page, attachments, local_dir)
+                print(f"Downloaded draw.io attachments from '{page['title']}' in '{page['space']['name']}' space")
 
 
 if __name__ == "__main__":

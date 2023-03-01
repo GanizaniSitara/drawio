@@ -6,6 +6,7 @@ from datetime import datetime
 from atlassian import Confluence
 import base64
 from html import escape
+import time
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -83,6 +84,7 @@ for subdir, _, files in os.walk(local_dir_metadata):
 
     # Upload images and attach them to page
     for item in data_sorted:
+        time.sleep(1)
         try:
             print(f"INFO - uploading {item['path']}")
             attachment_id = confluence.attach_file(
